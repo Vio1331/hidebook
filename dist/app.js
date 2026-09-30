@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from './vendor/OrbitControls.js';
-import { makeLeatherSurface, updateLeatherSurface, MM, LAYER } from './leather-geometry.js';
+import { makeLeatherSurface, updateLeatherSurface, MM, LAYER, BOTTOM, BODY_TOP, HALF, BOTTOM_RADIUS, POCKET_SAG, STITCH_INSET } from './leather-geometry.js';
 import { loadPhotoMaterials, photoSources } from './photo-materials.js';
 import { createStudioLighting, createStudioEnvironment } from './studio-lighting.js';
 
@@ -53,7 +53,7 @@ function sync(){
  $('#monogram').value=state.monogram;$('#letter-count').textContent=`${state.monogram.length} / 6`;
  document.querySelectorAll('[name=finish]').forEach(r=>r.checked=r.value===state.finish);
  $('#crease-style').value=state.crease;
- $('#summary').textContent=parts.map(p=>`${p.name}：${leathers.find(l=>l.id===state[p.id+'Material']).name} / ${color(state[p.id]).name}`).join('\n')+`\n压线：${{none:'无',single:'单线 · 2 mm'}[state.crease]}\n边油：${color(state.edge).name} · 缝线：${color(state.thread,threads).name}`+(state.monogram?`\n烫印：${state.monogram} / ${{gold:'烫金',silver:'烫银',blind:'素压'}[state.finish]}`:'\n烫印：无');
+ $('#summary').textContent=parts.map(p=>`${p.name}：${leathers.find(l=>l.id===state[p.id+'Material']).name} / ${color(state[p.id]).name}`).join('\n')+`\n装饰线：${{none:'无',single:'单线 · 1 mm'}[state.crease]}\n边油：${color(state.edge).name} · 缝线：${color(state.thread,threads).name}`+(state.monogram?`\n烫印：${state.monogram} / ${{gold:'烫金',silver:'烫银',blind:'素压'}[state.finish]}`:'\n烫印：无');
  $('#summary-colors').innerHTML=['body','accent','front','edge','thread'].map(p=>`<span style="background:${color(state[p],threads).hex}"></span>`).join('');
  document.querySelectorAll('[data-select-part]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.selectPart===activePart)));
  for(const p of parts)$('#part-material-'+p.id).textContent=leathers.find(l=>l.id===state[p.id+'Material']).name;
@@ -72,26 +72,26 @@ $('#crease-style').onchange=e=>{state.crease=e.target.value;sync()};
 const dialog=$('#reference-dialog');$('#reference-button').onclick=()=>dialog.showModal();$('.close-dialog').onclick=()=>dialog.close();dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close()}});
 sync();
 
-// Three individually extruded, rounded leather pieces. The open top edges remain unstitched.
-function outline(top,bottom=-1.14,width=3.5,r=.20){
- const s=new THREE.Shape(),l=-width/2,h=width/2;
- s.moveTo(l+r,bottom);s.lineTo(h-r,bottom);s.quadraticCurveTo(h,bottom,h,bottom+r);
- s.lineTo(h,top-.035);s.quadraticCurveTo(h,top,h-.035,top);s.lineTo(l+.035,top);s.quadraticCurveTo(l,top,l,top-.035);
- s.lineTo(l,bottom+r);s.quadraticCurveTo(l,bottom,l+r,bottom);return s;
+// Four leather pieces: a new rear base, the original base, and two curved-mouth pockets.
+function outline(top,curvedTop=false,bottom=BOTTOM,width=107*MM,r=BOTTOM_RADIUS){
+ const shape=new THREE.Shape(),left=-width/2,right=width/2;
+ shape.moveTo(left+r,bottom);shape.lineTo(right-r,bottom);shape.quadraticCurveTo(right,bottom,right,bottom+r);
+ shape.lineTo(right,top);if(curvedTop)shape.quadraticCurveTo(0,top-2*POCKET_SAG,left,top);else shape.lineTo(left,top);
+ shape.lineTo(left,bottom+r);shape.quadraticCurveTo(left,bottom,left+r,bottom);return shape;
 }
-function piece(part,top,z,depth=LAYER){
- const bevel=.003;
- const geo=new THREE.ExtrudeGeometry(outline(top),{depth:depth-2*bevel,bevelEnabled:true,bevelSegments:4,steps:1,bevelSize:0,bevelThickness:bevel,curveSegments:24});
- // Shell contributes the cut edge only. Dense custom faces carry physical creases.
+function piece(part,top,z,{key=part,back=false,curvedTop=false}={}){
+ const bevel=.003,geo=new THREE.ExtrudeGeometry(outline(top,curvedTop),{depth:LAYER-2*bevel,bevelEnabled:true,bevelSegments:4,steps:1,bevelSize:0,bevelThickness:bevel,curveSegments:32});
  geo.groups=geo.groups.filter(g=>g.materialIndex===1);
  const mat=new THREE.MeshPhysicalMaterial({color:color(state[part]).hex,roughness:.64,metalness:0,ior:1.46,specularIntensity:.42});
  const mesh=new THREE.Mesh(geo,[mat,edgeMaterial]);mesh.position.z=z+bevel;mesh.castShadow=false;mesh.receiveShadow=false;
- mesh.userData.surfaces=[];mesh.userData.creaseMaterial=new THREE.MeshPhysicalMaterial();mesh.userData.lastSurface='';
- for(const back of (part==='body'?[false,true]:[false])){const face=new THREE.Mesh(makeLeatherSurface(top,back?-bevel:depth-bevel,back),[mat,mesh.userData.creaseMaterial]);const uv=face.geometry.attributes.uv,offset=part==='body'?[.026,.015]:part==='accent'?[-.04,.037]:[0,0];for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)+offset[0],uv.getY(i)+offset[1]);face.castShadow=false;face.receiveShadow=false;mesh.add(face);mesh.userData.surfaces.push(face)}
- root.add(mesh);meshes[part]=mesh;return mesh;
+ mesh.userData.part=part;mesh.userData.surfaces=[];mesh.userData.creaseMaterial=new THREE.MeshPhysicalMaterial();mesh.userData.borderMaterial=new THREE.MeshPhysicalMaterial();mesh.userData.lastSurface='';
+ const face=new THREE.Mesh(makeLeatherSurface(top,back?-bevel:LAYER-bevel,back,curvedTop),[mat,mesh.userData.creaseMaterial,mesh.userData.borderMaterial]);
+ const uv=face.geometry.attributes.uv,offset=part==='body'?[.026,.015]:part==='accent'?[-.04,.037]:[0,0];for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)+offset[0],uv.getY(i)+offset[1]);face.castShadow=false;face.receiveShadow=false;mesh.add(face);mesh.userData.surfaces.push(face);
+ if(curvedTop){const curve=new THREE.QuadraticBezierCurve3(new THREE.Vector3(-HALF,top,z+LAYER/2),new THREE.Vector3(0,top-2*POCKET_SAG,z+LAYER/2),new THREE.Vector3(HALF,top,z+LAYER/2));const roundedEdge=new THREE.Mesh(new THREE.TubeGeometry(curve,64,LAYER/2,8,false),edgeMaterial);roundedEdge.castShadow=false;root.add(roundedEdge)}
+ root.add(mesh);meshes[key]=mesh;return mesh;
 }
-function stitchPath(z,top,reverse=false){
- const points=[],left=-1.64,right=1.64,bottom=-1.045,r=.17;
+function stitchPath(z,top){
+ const points=[],left=-HALF+STITCH_INSET,right=HALF-STITCH_INSET,bottom=BOTTOM+STITCH_INSET,r=BOTTOM_RADIUS-STITCH_INSET;
  points.push(new THREE.Vector3(left,top,z),new THREE.Vector3(left,bottom+r,z));
  for(let i=1;i<=12;i++){const a=Math.PI+i/12*Math.PI/2;points.push(new THREE.Vector3(left+r+Math.cos(a)*r,bottom+r+Math.sin(a)*r,z))}
  points.push(new THREE.Vector3(right-r,bottom,z));
@@ -100,7 +100,7 @@ function stitchPath(z,top,reverse=false){
  const curve=new THREE.CurvePath();for(let i=1;i<points.length;i++)curve.add(new THREE.LineCurve3(points[i-1],points[i]));
  const length=curve.getLength(),n=Math.floor(length/.071),geo=new THREE.CapsuleGeometry(.007,.035,3,5);
  const inst=new THREE.InstancedMesh(geo,stitchMaterial,n),dummy=new THREE.Object3D(),up=new THREE.Vector3(0,1,0);
- for(let i=0;i<n;i++){const t=(i+.4)/n;const p=curve.getPoint(t),d=curve.getTangent(t).normalize();d.x+=.17;d.normalize();dummy.position.copy(p);dummy.quaternion.setFromUnitVectors(up,d);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix)}
+ for(let i=0;i<n;i++){const t=(i+.4)/n,p=curve.getPoint(t),d=curve.getTangent(t).normalize();d.x+=.17;d.normalize();dummy.position.copy(p);dummy.quaternion.setFromUnitVectors(up,d);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix)}
  inst.castShadow=false;root.add(inst);
 }
 function updateLetters(){
@@ -115,20 +115,21 @@ function updateLetters(){
  const w=Math.max(.30,state.monogram.length*.105);letterMesh.scale.x=w;letterMesh.position.x=1.40-w/2;
 }
 function applyMaterials(){
- for(const p of ['body','accent','front']){
-  const mat=meshes[p].material[0],id=state[p+'Material'],spec=leathers.find(l=>l.id===id);
+ for(const meshKey of ['backing','body','accent','front']){
+  const mesh=meshes[meshKey],p=mesh.userData.part,mat=mesh.material[0],id=state[p+'Material'],spec=leathers.find(l=>l.id===id);
   mat.color.set(color(state[p]).hex);mat.envMapIntensity=.8;mat.map=albedos[id];mat.normalMap=normals[id];mat.normalScale.set(1,1);mat.roughnessMap=roughnessMaps[id];mat.roughness=spec.roughness;mat.clearcoat=spec.coat;mat.clearcoatRoughness=1;mat.needsUpdate=true;
-  const creaseMat=meshes[p].userData.creaseMaterial;creaseMat.copy(mat);
+  const creaseMat=mesh.userData.creaseMaterial;creaseMat.copy(mat);
   creaseMat.color.multiplyScalar(.74);creaseMat.roughness=spec.roughness*.82;
+  const borderMat=mesh.userData.borderMaterial;borderMat.copy(mat);borderMat.map=null;borderMat.normalMap=null;borderMat.roughnessMap=null;borderMat.roughness=Math.min(1,spec.roughness+.08);borderMat.needsUpdate=true;
   const key=id+state.crease;
-  if(meshes[p].userData.lastSurface!==key){const c=heights[id].image,field=c.getContext('2d').getImageData(0,0,c.width,c.height);for(const face of meshes[p].userData.surfaces)updateLeatherSurface(face.geometry,field,state.crease);meshes[p].userData.lastSurface=key}
+  if(mesh.userData.lastSurface!==key){const c=heights[id].image,field=c.getContext('2d').getImageData(0,0,c.width,c.height);for(const face of mesh.userData.surfaces)updateLeatherSurface(face.geometry,field,state.crease);mesh.userData.lastSurface=key}
  }
  edgeMaterial.color.set(color(state.edge).hex);
  stitchMaterial.color.set(color(state.thread,threads).hex).multiplyScalar(1.0);updateLetters();
 }
 // One continuous painted skin over the joined side and bottom edges, no visible strata.
 function sealEdges(){
- const line=new THREE.CurvePath(),v=(x,y)=>new THREE.Vector3(x,y,0),l=-1.752,r=1.752,b=-1.142,rad=.20;
+ const line=new THREE.CurvePath(),v=(x,y)=>new THREE.Vector3(x,y,0),l=-HALF-.002,r=HALF+.002,b=BOTTOM-.002,rad=BOTTOM_RADIUS;
  line.add(new THREE.LineCurve3(v(l,1.125),v(l,b+rad)));
  line.add(new THREE.QuadraticBezierCurve3(v(l,b+rad),v(l,b),v(l+rad,b)));
  line.add(new THREE.LineCurve3(v(l+rad,b),v(r-rad,b)));
@@ -138,7 +139,7 @@ function sealEdges(){
  const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t)};
  for(let i=0;i<=segments;i++){
   const t=i/segments,p=line.getPoint(t),tan=line.getTangent(t).normalize(),out=new THREE.Vector3(tan.y,-tan.x,0);
-  const zBack=-1.5*LAYER,zFront=-.5*LAYER+LAYER*(1-smooth(.78,.792,p.y))+LAYER*(1-smooth(.39,.402,p.y));
+  const zBack=-2.5*LAYER,zFront=-.5*LAYER+LAYER*(1-smooth(.78,.792,p.y))+LAYER*(1-smooth(.39,.402,p.y));
   for(let j=0;j<=cross;j++){const u=j/cross,bulge=Math.sin(u*Math.PI)*.002;positions.push(p.x+out.x*bulge,p.y+out.y*bulge,zBack+(zFront-zBack)*u);if(i<segments&&j<cross){const n=i*(cross+1)+j;indices.push(n,n+cross+1,n+1,n+1,n+cross+1,n+cross+2)}}
  }
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();
@@ -159,10 +160,10 @@ function init(){
  scene.environment=createStudioEnvironment(renderer);scene.environmentIntensity=1;
  root=new THREE.Group();root.position.set(0,-.1,0);scene.add(root);
  edgeMaterial=new THREE.MeshPhysicalMaterial({color:color(state.edge).hex,roughness:.38,clearcoat:.22,clearcoatRoughness:.30,side:THREE.DoubleSide});
- piece('body',1.16,-1.5*LAYER);piece('accent',.78,-.5*LAYER);piece('front',.39,.5*LAYER);sealEdges();
- stitchMaterial=new THREE.MeshStandardMaterial({color:'#37684a',roughness:.86});stitchPath(1.5*LAYER+.002,.29);stitchPath(-1.5*LAYER-.002,1.05);
+ piece('body',BODY_TOP,-2.5*LAYER,{key:'backing',back:true});piece('body',BODY_TOP,-1.5*LAYER);piece('accent',.78,-.5*LAYER,{curvedTop:true});piece('front',.39,.5*LAYER,{curvedTop:true});sealEdges();
+ stitchMaterial=new THREE.MeshStandardMaterial({color:'#37684a',roughness:.86});stitchPath(1.5*LAYER+.002,.29);stitchPath(-2.5*LAYER-.002,BODY_TOP-STITCH_INSET);
  // Short exposed stitches continue through the upper layered margins.
- for(const x of [-1.64,1.64])for(let y=.45;y<1.1;y+=.071){const geo=new THREE.CapsuleGeometry(.007,.035,3,5);const stitch=new THREE.Mesh(geo,stitchMaterial);stitch.position.set(x,y,y>.81?-.5*LAYER+.002:.5*LAYER+.002);stitch.rotation.z=-.14;root.add(stitch)}
+ for(const x of [-HALF+STITCH_INSET,HALF-STITCH_INSET])for(let y=.45;y<1.1;y+=.071){const geo=new THREE.CapsuleGeometry(.007,.035,3,5);const stitch=new THREE.Mesh(geo,stitchMaterial);stitch.position.set(x,y,y>.81?-.5*LAYER+.002:.5*LAYER+.002);stitch.rotation.z=-.14;root.add(stitch)}
  letterMesh=new THREE.Mesh(new THREE.PlaneGeometry(1,.135),new THREE.MeshStandardMaterial({transparent:true,depthWrite:false,alphaTest:.06,polygonOffset:true,polygonOffsetFactor:-1}));letterMesh.position.set(1.1,-.76,1.5*LAYER+.003);root.add(letterMesh);
  controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.075;controls.enablePan=false;controls.minDistance=3.0;controls.maxDistance=10;controls.maxPolarAngle=Math.PI;controls.rotateSpeed=.8;controls.zoomSpeed=.65;
  controls.addEventListener('start',()=>document.querySelectorAll('[data-view]').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-pressed','false')}));
