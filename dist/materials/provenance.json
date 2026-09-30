@@ -1,0 +1,97 @@
+[
+  {
+    "material": "Hermès Epsom calfskin",
+    "path": "/workspace/scratch/307519ab22f9/hermes-v5/epsom-detail.jpg",
+    "image_url": "https://assets.hermes.com/is/image/hermesproduct/sac-a-depeches-24-pouch--086415CK18-detail-wm-5-0-0-800-800_g.jpg",
+    "page_url": "https://www.hermes.com/us/en/product/sac-a-depeches-24-pouch-H086415CK18/",
+    "product": "Sac a Dépêches 24 pouch H086415CK18",
+    "source_ref": "turn24view1",
+    "dimensions": [
+      800,
+      800
+    ],
+    "crop_xyxy": [
+      150,
+      630,
+      450,
+      795
+    ],
+    "notes": "Sharp large planar lower flap. Crop avoids logo and stitching. 400x170 pixels, much sharper grain than whole product; larger polygon usable below diagonal stitching."
+  },
+  {
+    "material": "Hermès Chèvre Mysore goatskin",
+    "path": "/workspace/scratch/307519ab22f9/hermes-v5/mysore-detail.jpg",
+    "image_url": "https://assets.hermes.com/is/image/hermesproduct/hermes-geta-bag--083052CKBO-detail-wm-5-0-0-800-800_g.jpg",
+    "page_url": "https://www.hermes.com/us/en/product/hermes-geta-bag-H083052CKBO/",
+    "product": "Hermès Geta H083052CKBO",
+    "source_ref": "turn28view1",
+    "dimensions": [
+      800,
+      800
+    ],
+    "crop_xyxy": [
+      370,
+      65,
+      660,
+      180
+    ],
+    "notes": "Sharp top flap grain. 420x120 clean rectangle; top flap is perspective angled. Avoid woven strap around bottom and side; it is textile not leather. Back full image has 300x230 patch but less sharp."
+  },
+  {
+    "material": "Hermès Togo calfskin",
+    "path": "/workspace/scratch/307519ab22f9/hermes-v5/togo-depeches-detail.jpg",
+    "image_url": "https://assets.hermes.com/is/image/hermesproduct/sac-a-depeches-29-messenger-bag--082688CK18-detail-wm-5-0-0-800-800_g.jpg",
+    "page_url": "https://www.hermes.com/uk/en/product/sac-a-depeches-29-messenger-bag-H082688CK18/",
+    "product": "Sac a Dépêches 29 messenger bag H082688CK18",
+    "source_ref": "turn33view0",
+    "dimensions": [
+      800,
+      800
+    ],
+    "crop_xyxy": [
+      15,
+      285,
+      250,
+      480
+    ],
+    "notes": "Sharp natural pebble grain, flat top flap. Alternate lower exterior crop [180,680,770,795] is 590x115 pixels. Avoid smooth lining in central opening."
+  },
+  {
+    "material": "Hermès Evercolor calfskin",
+    "path": "/workspace/scratch/307519ab22f9/hermes-v5/evercolor-faubourg-detail.jpg",
+    "image_url": "https://assets.hermes.cn/is/image/hermesproduct/faubourg-express-bag--086337CC37-detail-wm-5-0-0-800-800_g.jpg",
+    "page_url": "https://www.hermes.cn/cn/en/product/faubourg-express-bag-H086337CC37/",
+    "product": "Faubourg Express bag H086337CC37",
+    "source_ref": "turn35view0",
+    "dimensions": [
+      800,
+      800
+    ],
+    "crop_xyxy": [
+      20,
+      250,
+      350,
+      575
+    ],
+    "notes": "Large 330x325 clean exterior side panel. Clear natural small grain; source lighting is darker center-left, brighter at right, some curvature. Product described solely as Evercolor calfskin. Do not use Maximors detail; it shows the smooth inner flap."
+  },
+  {
+    "material": "Hermès Swift calfskin",
+    "product": "Glenan Compact wallet H086439CC37",
+    "color": "Gold",
+    "page_url": "https://www.hermes.com/ca/en/product/glenan-compact-wallet-H086439CC37/",
+    "image_url": "https://assets.hermes.com/is/image/hermesproduct/glenan-compact-wallet--086439CC37-back-wm-5-0-0-800-800_g.jpg",
+    "crop_xyxy": [
+      440,
+      235,
+      600,
+      500
+    ],
+    "notes": "Sharp full back product image; right panel 160x265 clean crop, excludes strap and stitching. Fine pores visibly in focus. Hac above candidate partly interior, avoid. Pochenplus too small distant flat.",
+    "path": "dist/materials/swift-source.jpg",
+    "dimensions": [
+      800,
+      800
+    ]
+  }
+]
