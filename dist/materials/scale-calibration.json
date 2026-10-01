@@ -12,7 +12,7 @@
       ],
       "product_px": 1254,
       "product_mm": 170,
-      "depth": 0.125
+      "depth": 0.145
     },
     "epsom": {
       "file": "Epsom-mc²-euclide-10.5x7.5.jpg",
@@ -27,16 +27,16 @@
       "depth": 0.11
     },
     "evercolor": {
-      "file": "Evercolor-h-sellier-11x9.2.webp",
+      "file": "Evercolor-h-sellier-10.2x8.jpg",
       "crop": [
-        520,
-        580,
-        1450,
-        1320
+        540,
+        620,
+        1400,
+        1280
       ],
-      "product_px": 1180,
-      "product_mm": 110,
-      "depth": 0.075
+      "product_px": 1344,
+      "product_mm": 102,
+      "depth": 0.082
     },
     "mysore": {
       "file": "Mysore-calvi-duo-10.5x7(2).webp",
@@ -60,7 +60,7 @@
       ],
       "product_px": 880,
       "product_mm": 66,
-      "depth": 0.01
+      "depth": 0.012
     }
   },
   "method": "Measured product pixel width / filename dimensions in mm; log-luminance shading removal, minimum-error photo quilting, physically scaled relief normals; clamp, never tile."

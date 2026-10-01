@@ -1,12 +1,13 @@
 """Neutral black samples: same exposure and no photographic edge shadows."""
 from pathlib import Path
-import json
+import json, sys
 import numpy as np
 from PIL import Image
 from scipy.ndimage import gaussian_filter
 root=Path(__file__).resolve().parents[1]/'dist/materials'
 sources=json.loads((root/'scale-calibration.json').read_text())['sources']
 for name,s in sources.items():
+ if len(sys.argv)>1 and name not in sys.argv[1:]:continue
  im=Image.open(root/s['file']).convert('L').crop(s['crop'])
  v=np.asarray(im,dtype=np.float32)/255
  log=np.log(np.maximum(v,.015));detail=log-gaussian_filter(log,25)

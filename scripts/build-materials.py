@@ -6,16 +6,16 @@ import json, sys
 import numpy as np
 from PIL import Image
 from scipy.ndimage import gaussian_filter, grey_closing
-from grain_reflectance import reflectance
+from grain_reflectance import reflectance, PROFILES
 ROOT=Path(__file__).resolve().parents[1]/'dist/materials'
 SIZE=4096;SPAN=160;PX=SIZE/SPAN
 # Pixels refer to the supplied 2000px product photos. Product short side, not canvas.
 SOURCES={
- 'togo':dict(file='Togo-ulysse-22x17.webp',crop=[520,330,1400,1670],product_px=1254,product_mm=170,depth=.125),
+ 'togo':dict(file='Togo-ulysse-22x17.webp',crop=[520,330,1400,1670],product_px=1254,product_mm=170,depth=.145),
  'epsom':dict(file='Epsom-mc²-euclide-10.5x7.5.jpg',crop=[650,470,1320,1400],product_px=900,product_mm=75,depth=.11),
- 'evercolor':dict(file='Evercolor-h-sellier-11x9.2.webp',crop=[520,580,1450,1320],product_px=1180,product_mm=110,depth=.075),
+ 'evercolor':dict(file='Evercolor-h-sellier-10.2x8.jpg',crop=[540,620,1400,1280],product_px=1344,product_mm=102,depth=.082),
  'mysore':dict(file='Mysore-calvi-duo-10.5x7(2).webp',crop=[490,300,1490,1680],product_px=1150,product_mm=70,depth=.10),
- 'swift':dict(file='Swift-magsafe-9.6x6.6(3).jpg',crop=[780,550,1140,1080],product_px=880,product_mm=66,depth=.010),
+ 'swift':dict(file='Swift-magsafe-9.6x6.6(3).jpg',crop=[780,550,1140,1080],product_px=880,product_mm=66,depth=.012),
 }
 def cut(e):
  h,w=e.shape;c=e.copy();paths=np.empty((h,w),np.int16)
@@ -67,18 +67,23 @@ for k,(name,s) in enumerate(SOURCES.items()):
  # Shallow rounded grain plateaus, dark valleys. No photo highlights in base color.
  relief=1-np.logaddexp(0,-1.6*(atlas+.3))/5
  relief=gaussian_filter(relief,.75)
- if name=='swift':relief=gaussian_filter(relief,1.3)
+ if name=='swift':relief=gaussian_filter(relief,1.1)
  if name=='epsom':
   # Bridge sub-0.16mm interruptions in the valleys, without replacing the photo grain.
   valley=1-relief;relief=gaussian_filter(1-(.35*valley+.65*grey_closing(valley,size=(5,5))),.65)
+ if name in ['togo','evercolor']:
+  # Connect only short valley gaps, retaining each photographed grain's silhouette.
+  size,blend=(5,.60) if name=='togo' else (3,.70)
+  valley=1-relief
+  relief=gaussian_filter(1-((1-blend)*valley+blend*grey_closing(valley,size=(size,size))),.90)
  gy,gx=np.gradient(relief*s['depth'],SPAN/SIZE)
  norm=np.sqrt(gx*gx+gy*gy+1)
  normal=np.stack([(1-gx/norm)*127.5,(1+gy/norm)*127.5,(1+1/norm)*127.5],axis=-1)
  valley=np.clip(1-relief,0,1)
  tone=np.clip(.987-(.10 if name=='epsom' else .042)*valley,.87 if name=='epsom' else .92,1)*255
  rough=np.clip(.86+.12*valley,0,1)*255
- if name in ['epsom','evercolor','mysore']:
-  rough=reflectance(relief,.52 if name=='mysore' else .65)
+ if name in PROFILES:
+  rough=reflectance(relief,*PROFILES[name])
  save(normal,f'{name}-normal.webp');save(tone,f'{name}-base.webp',False)
  save(rough,f'{name}-rough.webp');save(np.clip(relief,0,1)*255,f'{name}-height.webp')
  print(name,'4096 px / 160 mm complete',flush=True)

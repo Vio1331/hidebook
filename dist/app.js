@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {OrbitControls} from './vendor/OrbitControls.js';
 import {MM,LAYER,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,ATLAS_MM,CREASE_INSET,STITCH_INSET,THREAD_DIAMETER,slotTop,makeLeatherSurface,setPressedGeometry,foldedTopGeometry,seamPath,stitchSegments,ringPoints,surfaceZ,seamSurfaceZ} from './leather-geometry.js?v=20261002d';
-import {loadPhotoMaterials,leatherSpecs} from './photo-materials.js?v=20261002f';
+import {loadPhotoMaterials,leatherSpecs} from './photo-materials.js?v=20261002h';
 import {seamCurves,linenGeometry,edgePaintGeometry,LINEN_PLIES} from './leather-details.js?v=20261002d';
 import {createStudioLighting,createStudioEnvironment} from './studio-lighting.js?v=20261002f';
 const $=s=>document.querySelector(s);
@@ -19,7 +19,7 @@ const color=(id,list=palette)=>list.find(c=>c.id===id);
 const spec=id=>leatherSpecs.find(l=>l.id===id);
 const current=()=>steps[activeStep];
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
-function materialCard(l){return `<article class="material-card"><img src="./materials/baked/${l.id}-sample.jpg?v=20261002d" alt="${l.name} 皮纹"><header><h3>${l.name}</h3><span>${l.kind}</span></header><dl><dt>外观</dt><dd>${l.appearance}</dd><dt>触感</dt><dd>${l.touch}</dd><dt>手感</dt><dd>${l.feel}</dd><dt>使用</dt><dd>${l.aging}</dd></dl></article>`}
+function materialCard(l){return `<article class="material-card"><img src="./materials/baked/${l.id}-sample.jpg?v=${['togo','evercolor','swift'].includes(l.id)?'20261002h':'20261002d'}" alt="${l.name} 皮纹"><header><h3>${l.name}</h3><span>${l.kind}</span></header><dl><dt>外观</dt><dd>${l.appearance}</dd><dt>触感</dt><dd>${l.touch}</dd><dt>手感</dt><dd>${l.feel}</dd><dt>使用</dt><dd>${l.aging}</dd></dl></article>`}
 function swatches(id,list){return `<div class="swatches" role="group" aria-label="${current().name}颜色">${list.map(c=>`<button class="swatch" data-color="${c.id}" style="--swatch:${c.hex}" aria-label="${c.name}" aria-pressed="${state[id]===c.id}"><span class="color-disc"></span><span class="color-caption">${c.name}</span></button>`).join('')}</div>`}
 $('#part-menu').innerHTML=steps.map((s,i)=>`<button data-step="${i}" aria-current="false">${s.name}</button>`).join('');
 function closeMenu(){$('#part-menu').hidden=true;$('#menu-toggle').setAttribute('aria-expanded','false')}
@@ -135,7 +135,7 @@ function updateLetters(){
 }
 function applyMaterials(part=null){
  if(!ready)return;needsRender=true;
- for(const p of parts){if(part&&part!==p.id)continue;const l=spec(state[p.id+'Material']),m=leatherMaterials[p.id];m.color.set(color(state[p.id]).hex);Object.assign(m,materialMaps[l.id]);m.normalScale.set(...({epsom:[1.28,1.28],evercolor:[1.16,1.16],mysore:[1.25,1.25]}[l.id]||[1,1]));m.roughness=l.roughness;m.specularIntensity=l.id==='epsom'?.42:l.id==='swift'?.40:l.id==='mysore'?1:.55;m.envMapIntensity=l.id==='epsom'?.62:l.id==='swift'?.60:l.id==='mysore'?1.05:.72;m.clearcoat=l.id==='swift'?.015:0;m.clearcoatRoughness=.5;m.needsUpdate=true}
+ for(const p of parts){if(part&&part!==p.id)continue;const l=spec(state[p.id+'Material']),m=leatherMaterials[p.id];m.color.set(color(state[p.id]).hex);Object.assign(m,materialMaps[l.id]);m.normalScale.set(...({epsom:[1.28,1.28],togo:[1.15,1.15],evercolor:[1.40,1.40],swift:[1.60,1.60],mysore:[1.25,1.25]}[l.id]||[1,1]));m.roughness=l.roughness;m.specularIntensity=l.id==='epsom'?.42:l.id==='swift'?.40:l.id==='mysore'?1:l.id==='evercolor'?.95:l.id==='togo'?.50:.55;m.envMapIntensity=l.id==='epsom'?.62:l.id==='swift'?.60:l.id==='mysore'?1.05:l.id==='evercolor'?1.10:l.id==='togo'?.66:.72;m.clearcoat=l.id==='swift'?.015:0;m.clearcoatRoughness=.5;m.needsUpdate=true}
  edgeMaterial.color.set(color(state.edge).hex);threadMaterial.color.set(color(state.thread,threads).hex).multiplyScalar(.85);updateLetters();
 }
 // Presets follow an arc at the current radius, never the chord through the model.
