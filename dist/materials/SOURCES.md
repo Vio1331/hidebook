@@ -1,50 +1,17 @@
-# Hermès official macro source photographs — v5
+# 当前材质来源与比例校准
 
-Retrieved 2026-09-29. All five source photos are original 800×800 Hermès gallery detail images. The working 2048×2048 base/normal atlases are reconstructed from these photographs; this does not imply 2048 pixels of independently captured detail or a measured material scan. Rectangular crops preserve aspect ratio. Alran Sully was removed and replaced by correctly identified Hermès Chèvre Mysore.
+本轮全部从 Hermès 官方卡包照片取样，优先使用用户给出的中国官网卡包分类。照片上产品的已知宽度用于标定采样块所覆盖的毫米数；竖放的 Calvi 使用官方 70 mm 短边。图集统一为 140 × 140 mm / 2048 px，并以同一物理 UV 密度贴到 107 × 70 mm 卡包上。原始照片仅 800 px；生成 2048 px 不代表原始扫描精度。
 
-## Hermès Epsom calfskin
+| 皮料 | 官方卡包 | 标定尺寸与照片边宽 | 链接 |
+|---|---|---|---|
+| Evercolor | Citizen Twill，H088017CAAE | 105 mm / 574 px | https://www.hermes.cn/cn/zh/product/citizen-twill卡包-H088017CAAE/ |
+| Epsom | Calvi Duo，H083035CKI2 | 短边 70 mm / 358 px | https://www.hermes.cn/cn/zh/product/calvi-duo短卡包-H083035CKI2/ |
+| Swift | Hermèsnap，H085854CK37 | 97 mm / 335 px | https://www.hermes.cn/cn/zh/product/hermesnap卡包-H085854CK37/ |
+| Mysore | Calvi，H044166CK28 | 短边 70 mm / 330 px | https://www.hermes.cn/cn/zh/product/calvi卡包-H044166CK28/ |
+| Togo 参考 | Rooroo 3CC，H078523CAAA | 70 mm / 416 px | https://www.hermes.com/sg/en/product/hermes-rooroo-3cc-card-holder-H078523CAAA/ |
 
-- Product: Sac a Dépêches 24 pouch H086415CK18
-- Official page: https://www.hermes.com/us/en/product/sac-a-depeches-24-pouch-H086415CK18/
-- Original image: https://assets.hermes.com/is/image/hermesproduct/sac-a-depeches-24-pouch--086415CK18-detail-wm-5-0-0-800-800_g.jpg
-- Native crop (left, top, right, bottom): [150, 630, 450, 795]
+Togo 的重要边界：未在中国卡包分类中找到足够明确的单一 Togo 款；Rooroo 官方列出 Togo、Epsom、Swift、Mysore 四种皮料，采样绿色外片按颗粒外观推定为 Togo。官方没有逐片标注，这一项不应视为已核实的单一皮料扫描。
 
-## Hermès Chèvre Mysore goatskin
+具体裁切框、原图产品宽度、图集毫米数保存在 `scale-calibration.json`。仅提取无文字、五金、缝线的皮面。去除低频照片光照后重建浅沟槽、法线与粗糙度，色彩由用户选择。比例为摄影估计，透视、皮面曲率和批次仍会造成误差。
 
-- Product: Hermès Geta H083052CKBO
-- Official page: https://www.hermes.com/us/en/product/hermes-geta-bag-H083052CKBO/
-- Original image: https://assets.hermes.com/is/image/hermesproduct/hermes-geta-bag--083052CKBO-detail-wm-5-0-0-800-800_g.jpg
-- Native crop (left, top, right, bottom): [370, 65, 660, 180]
-
-## Hermès Togo calfskin
-
-- Product: Sac a Dépêches 29 messenger bag H082688CK18
-- Official page: https://www.hermes.com/uk/en/product/sac-a-depeches-29-messenger-bag-H082688CK18/
-- Original image: https://assets.hermes.com/is/image/hermesproduct/sac-a-depeches-29-messenger-bag--082688CK18-detail-wm-5-0-0-800-800_g.jpg
-- Native crop (left, top, right, bottom): [15, 285, 250, 480]
-
-## Hermès Evercolor calfskin
-
-- Product: Faubourg Express bag H086337CC37
-- Official page: https://www.hermes.cn/cn/en/product/faubourg-express-bag-H086337CC37/
-- Original image: https://assets.hermes.cn/is/image/hermesproduct/faubourg-express-bag--086337CC37-detail-wm-5-0-0-800-800_g.jpg
-- Native crop (left, top, right, bottom): [20, 250, 350, 575]
-
-## Hermès Swift calfskin (v6 replacement)
-
-- Product: Glenan Compact wallet H086439CC37, Gold
-- Official page: https://www.hermes.com/ca/en/product/glenan-compact-wallet-H086439CC37/
-- Original image: https://assets.hermes.com/is/image/hermesproduct/glenan-compact-wallet--086439CC37-back-wm-5-0-0-800-800_g.jpg
-- Native crop: [440,235,600,500], sharply focused right rear leather panel.
-- Replaces the soft navy Glenan sample. Lower sampling magnification preserves the fine pores; Swift geometric microrelief is separately reduced to match its fine surface.
-
-## Reconstruction
-
-Local lighting removal, calibrated contrast and normal reconstruction, minimum-error patch quilting without periodic UV wrapping. Pigment texture and normal data: 2048×2048; smooth roughness and geometric height data: 512×512. Normal/height/roughness WebP encoding is lossless. Full source photographs retained. Material properties and perspective correction remain approximations; all identity labels follow the official source products.
-
-V6 removes directional highlights from pigment maps (only restrained cavity occlusion remains), allowing live studio lights to control shading.
-
-
-### v7 表面重建
-
-来源图片保持不变。由去光照后的暗部沟槽估计浅凹/圆顶形状，不将照片高光直接当成凸峰。两路法线从同一物理尺度高度推导；微纹只参与一次法线响应，网格保留宏观圆边/鼓面/压线。该方法仍不是摄影测量或扫描，不能保证重建了原皮料的真实高度。
+已对照官网卡包正面图检查颗粒大小、开口比例与细缝线；形状按用户给定规格，不复制官网卡包的标识或五金。
