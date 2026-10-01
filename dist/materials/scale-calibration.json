@@ -27,15 +27,15 @@
       "depth": 0.075
     },
     "evercolor": {
-      "file": "Evercolor-h-sellier-10.2x8.jpg",
+      "file": "Evercolor-h-sellier-11x9.2.webp",
       "crop": [
-        390,
-        590,
-        1590,
-        1380
+        520,
+        580,
+        1450,
+        1320
       ],
-      "product_px": 1380,
-      "product_mm": 102,
+      "product_px": 1180,
+      "product_mm": 110,
       "depth": 0.075
     },
     "mysore": {

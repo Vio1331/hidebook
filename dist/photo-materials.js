@@ -9,7 +9,7 @@ export const leatherSpecs=[
 export async function loadPhotoMaterials(THREE){
  const result={};const loader=new THREE.TextureLoader();
  await Promise.all(leatherSpecs.map(async spec=>{
-  const maps=await Promise.all(['base','normal','rough'].map(kind=>loader.loadAsync(`./materials/baked/${spec.id}-${kind}.webp?v=20261002`)));
+  const maps=await Promise.all(['base','normal','rough'].map(kind=>loader.loadAsync(`./materials/baked/${spec.id}-${kind}.webp?v=20261002b`)));
   maps.forEach((t,i)=>{t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;t.anisotropy=8;if(i===0)t.colorSpace=THREE.SRGBColorSpace});
   result[spec.id]={map:maps[0],normalMap:maps[1],roughnessMap:maps[2]};
  }));return result;

@@ -2,7 +2,7 @@
 Reproduce: python scripts/build-materials.py. Pillow, NumPy and SciPy required.
 """
 from pathlib import Path
-import json
+import json, sys
 import numpy as np
 from PIL import Image
 from scipy.ndimage import gaussian_filter
@@ -12,7 +12,7 @@ SIZE=4096;SPAN=160;PX=SIZE/SPAN
 SOURCES={
  'togo':dict(file='Togo-ulysse-22x17.webp',crop=[520,330,1400,1670],product_px=1254,product_mm=170,depth=.125),
  'epsom':dict(file='Epsom-tarmac-13.8x9.7.jpg',crop=[600,570,1430,1550],product_px=988,product_mm=97,depth=.075),
- 'evercolor':dict(file='Evercolor-h-sellier-10.2x8.jpg',crop=[390,590,1590,1380],product_px=1380,product_mm=102,depth=.075),
+ 'evercolor':dict(file='Evercolor-h-sellier-11x9.2.webp',crop=[520,580,1450,1320],product_px=1180,product_mm=110,depth=.075),
  'mysore':dict(file='Mysore-calvi-duo-10.5x7(2).webp',crop=[490,300,1490,1680],product_px=1150,product_mm=70,depth=.10),
  'swift':dict(file='Swift-magsafe-9.6x6.6(3).jpg',crop=[780,550,1140,1080],product_px=880,product_mm=66,depth=.010),
 }
@@ -49,15 +49,20 @@ def quilt(src,rng):
 def save(arr,file,lossless=True):
  Image.fromarray(np.uint8(np.clip(arr,0,255))).save(ROOT/'baked'/file,format='WEBP',lossless=lossless,quality=95,method=6)
 for k,(name,s) in enumerate(SOURCES.items()):
+ if len(sys.argv)>1 and name not in sys.argv[1:]:continue
  image=Image.open(ROOT/s['file']).convert('RGB');crop=image.crop(s['crop']);crop.save(ROOT/'baked'/f'{name}-sample.jpg',quality=93)
  mm_per_pixel=s['product_mm']/s['product_px'];scale=mm_per_pixel*PX
  crop=crop.resize((round(crop.width*scale),round(crop.height*scale)),Image.Resampling.LANCZOS)
  luma=np.asarray(crop,dtype=np.float32)@np.array([.2126,.7152,.0722],np.float32)/255
  log=np.log(np.maximum(luma,.015));detail=log-gaussian_filter(log,PX*1.7)
  # Remove exposure/shading while keeping the supplied grain's size and orientation.
- detail=np.clip(detail/max(.006,float(detail.std())),-2.5,2.5)
+ if name=='evercolor':
+  local=np.sqrt(gaussian_filter(detail*detail,PX*.8));detail=detail/np.maximum(local,float(np.median(local))*.6)
+ else:detail=detail/max(.006,float(detail.std()))
+ detail=np.clip(detail,-2.5,2.5)
  atlas=quilt(detail,np.random.default_rng(9145+k*71))
- atlas=atlas-gaussian_filter(atlas,PX*3)
+ atlas=atlas-gaussian_filter(atlas,PX*1.2)
+ if name=='evercolor':atlas/=np.maximum(np.sqrt(gaussian_filter(atlas*atlas,PX*1.2)),.5)
  # Shallow rounded grain plateaus, dark valleys. No photo highlights in base color.
  relief=1-np.logaddexp(0,-1.6*(atlas+.3))/5
  relief=gaussian_filter(relief,.75)

@@ -1,12 +1,12 @@
 import * as THREE from './vendor/three.module.js';
 export const CARD_WIDTH_MM=107,CARD_HEIGHT_MM=70,MM=3.5/107,LAYER=MM;
 export const HALF=53.5*MM,BOTTOM=-35*MM,BODY_TOP=35*MM;
-export const BOTTOM_RADIUS=10*MM,CREASE_INSET=2*MM,CREASE_WIDTH=.2*MM;
+export const BOTTOM_RADIUS=10*MM,CREASE_INSET=2*MM,CREASE_WIDTH=.28*MM;
 export const STITCH_INSET=3*MM,THREAD_DIAMETER=.45*MM,STITCH_PITCH=3.38*MM;
 export const ACCENT_TOP=24*MM,FRONT_TOP=13*MM,ATLAS_MM=160;
 export const PART_TOP={rear:BODY_TOP,body:BODY_TOP,accent:ACCENT_TOP,front:FRONT_TOP};
 export const PART_Z={rear:-2*MM,body:-MM,accent:0,front:MM};
-export function slotTop(x,top){return top-(top<30*MM?1.15*MM*(1-(x/HALF)**2):0)}
+export function slotTop(x,top){return top}
 export function outline(top,inset=0){
  const s=new THREE.Shape(),r=BOTTOM_RADIUS-inset,h=HALF-inset,b=BOTTOM+inset;
  s.moveTo(-h+r,b);s.lineTo(h-r,b);s.absarc(h-r,b+r,r,-Math.PI/2,0,false);s.lineTo(h,slotTop(h,top)-inset);
@@ -30,14 +30,14 @@ export function openingOffset(part,x,y){
 }
 export function grooveDepth(x,y,top){
  const d=Math.min(edgeDistance(x,y),topDistance(x,y,top));
- return .055*MM*Math.exp(-(((d-CREASE_INSET)/(.064*MM))**2));
+ return .10*MM*Math.exp(-(((d-CREASE_INSET)/(.115*MM))**2));
 }
 export function surfaceZ(part,x,y,back=false,pressed=true){
  return PART_Z[part]+(back?0:LAYER)+openingOffset(part,x,y)-(pressed?(back?-1:1)*grooveDepth(x,y,PART_TOP[part]):0);
 }
 // Densely sampled concentric boundaries place real vertices on the 0.2mm groove.
 // The interior is subdivided only enough to reproduce gentle leather bowing.
-function ringPoints(top,inset){
+export function ringPoints(top,inset){
  const h=HALF-inset,r=BOTTOM_RADIUS-inset,b=BOTTOM+inset,pts=[];
  const line=(ax,ay,bx,by,n)=>{for(let i=0;i<n;i++)pts.push(new THREE.Vector2(ax+(bx-ax)*i/n,ay+(by-ay)*i/n))};
  line(-h+r,b,h-r,b,170);
@@ -68,11 +68,15 @@ export function makeLeatherSurface(part,back=false,stampShapes=[]){
  }
  if(stampShapes.length&&!back){const ind=g.index.array;for(let i=0;i<ind.length;i+=3)tri([a[ind[i]*3],a[ind[i]*3+1]],[a[ind[i+1]*3],a[ind[i+1]*3+1]],[a[ind[i+2]*3],a[ind[i+2]*3+1]])}
  else{
-  const inset=3.5*MM,h=HALF-inset,r=10*MM-inset,b=BOTTOM+inset,nx=100,ny=70,start=positions.length/3;
-  for(let j=0;j<ny;j++){const t=j/(ny-1),y0=b+(top-inset-b)*t,half=y0<b+r?h-r+Math.sqrt(Math.max(0,r*r-(y0-b-r)**2)):h;
-   for(let i=0;i<nx;i++){const x=-half+2*half*i/(nx-1),y=y0-(top<30*MM?1.15*MM*(1-(x/HALF)**2)*THREE.MathUtils.smoothstep(t,.75,1):0);add(x,y)}
+  // Every inner contour shares vertices with the previous contour. The old
+  // independent rectangular grid left uncovered crescents at rounded corners.
+  const cy=(BOTTOM+top)/2;
+  for(let j=1;j<=24;j++){
+   const scale=1-j/25,ids=pts.map(p=>add(p.x*scale,cy+(p.y-cy)*scale));
+   for(let i=0;i<ids.length;i++){const k=(i+1)%ids.length;indices.push(previous[i],previous[k],ids[i],previous[k],ids[k],ids[i])}
+   previous=ids;
   }
-  for(let j=0;j<ny-1;j++)for(let i=0;i<nx-1;i++){const k=start+j*nx+i;indices.push(k,k+1,k+nx,k+1,k+nx+1,k+nx)}
+  const center=add(0,cy);for(let i=0;i<previous.length;i++)indices.push(previous[i],previous[(i+1)%previous.length],center);
  }g.dispose();
  if(back)for(let i=0;i<indices.length;i+=3)[indices[i+1],indices[i+2]]=[indices[i+2],indices[i+1]];
  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();geo.computeBoundingSphere();geo.userData={part,back,rest:new Float32Array(positions)};return geo;
@@ -82,7 +86,7 @@ export function foldedTopGeometry(part){
  const top=PART_TOP[part],p=[],uv=[],ind=[],nx=300,nr=24;
  for(let i=0;i<=nx;i++){const x=-HALF+2*HALF*i/nx;for(let j=0;j<=nr;j++){
   const a=j/nr*Math.PI,y=slotTop(x,top)-.5*MM+.5*MM*Math.sin(a),z=PART_Z[part]+.5*MM+.5*MM*Math.cos(a)+openingOffset(part,x,slotTop(x,top)-.5*MM);
-  p.push(x,y,z);uv.push(x/(ATLAS_MM*MM)+.5,y/(ATLAS_MM*MM)+.5);
+  p.push(x,y,z);const off={rear:[.025,.015],body:[-.025,-.015],accent:[.04,-.06],front:[-.04,.06]}[part];uv.push(x/(ATLAS_MM*MM)+.5+off[0],(top-.5*MM+.5*MM*a)/(ATLAS_MM*MM)+.5+off[1]);
   if(i<nx&&j<nr){const k=i*(nr+1)+j;ind.push(k,k+nr+1,k+1,k+1,k+nr+1,k+nr+2)}
  }}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(ind);g.computeVertexNormals();return g;
 }
