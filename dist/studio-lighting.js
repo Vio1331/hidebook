@@ -12,13 +12,14 @@ export const studioLights = [
 export function createStudioEnvironment(renderer){
  const w=512,h=256,data=new Float32Array(w*h*4);
  const key=new THREE.Vector3(-.6,.7,.8).normalize(),fill=new THREE.Vector3(.8,.15,.6).normalize();
- const direction=new THREE.Vector3();
+ const direction=new THREE.Vector3(),grainKey=new THREE.Vector3(-.24,.30,.92).normalize();
  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
   const phi=(x+.5)/w*2*Math.PI-Math.PI,theta=(y+.5)/h*Math.PI;
   direction.set(Math.cos(phi)*Math.sin(theta),-Math.cos(theta),Math.sin(phi)*Math.sin(theta));
   const k=3.3*Math.exp((direction.dot(key)-1)*7),f=.65*Math.exp((direction.dot(fill)-1)*4);
+  const glint=2.2*Math.exp((direction.dot(grainKey)-1)*90);
   const ambient=.22+.10*Math.max(0,direction.y),i=(y*w+x)*4;
-  data[i]=ambient+k+f*.96;data[i+1]=ambient+k*.985+f*.98;data[i+2]=ambient+k*.96+f;data[i+3]=1;
+  data[i]=ambient+k+f*.96+glint;data[i+1]=ambient+k*.985+f*.98+glint;data[i+2]=ambient+k*.96+f+glint;data[i+3]=1;
  }
  const texture=new THREE.DataTexture(data,w,h,THREE.RGBAFormat,THREE.FloatType);
  texture.mapping=THREE.EquirectangularReflectionMapping;texture.needsUpdate=true;

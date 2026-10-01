@@ -5,7 +5,8 @@ from pathlib import Path
 import json, sys
 import numpy as np
 from PIL import Image
-from scipy.ndimage import gaussian_filter
+from scipy.ndimage import gaussian_filter, grey_closing
+from grain_reflectance import reflectance
 ROOT=Path(__file__).resolve().parents[1]/'dist/materials'
 SIZE=4096;SPAN=160;PX=SIZE/SPAN
 # Pixels refer to the supplied 2000px product photos. Product short side, not canvas.
@@ -67,12 +68,17 @@ for k,(name,s) in enumerate(SOURCES.items()):
  relief=1-np.logaddexp(0,-1.6*(atlas+.3))/5
  relief=gaussian_filter(relief,.75)
  if name=='swift':relief=gaussian_filter(relief,1.3)
+ if name=='epsom':
+  # Bridge sub-0.16mm interruptions in the valleys, without replacing the photo grain.
+  valley=1-relief;relief=gaussian_filter(1-(.35*valley+.65*grey_closing(valley,size=(5,5))),.65)
  gy,gx=np.gradient(relief*s['depth'],SPAN/SIZE)
  norm=np.sqrt(gx*gx+gy*gy+1)
  normal=np.stack([(1-gx/norm)*127.5,(1+gy/norm)*127.5,(1+1/norm)*127.5],axis=-1)
  valley=np.clip(1-relief,0,1)
  tone=np.clip(.987-(.10 if name=='epsom' else .042)*valley,.87 if name=='epsom' else .92,1)*255
  rough=np.clip(.86+.12*valley,0,1)*255
+ if name in ['epsom','evercolor','mysore']:
+  rough=reflectance(relief,.52 if name=='mysore' else .65)
  save(normal,f'{name}-normal.webp');save(tone,f'{name}-base.webp',False)
  save(rough,f'{name}-rough.webp');save(np.clip(relief,0,1)*255,f'{name}-height.webp')
  print(name,'4096 px / 160 mm complete',flush=True)

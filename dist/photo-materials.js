@@ -2,15 +2,15 @@
 export const leatherSpecs=[
  {id:'epsom',name:'Epsom',kind:'小牛皮',roughness:.56,depth:.11,appearance:'规则且稍带光亮的小颗粒，均匀。',touch:'干燥，纹路稍有层次。',feel:'圆润且坚实。',aging:'保持硬挺，耐划痕；常摩擦处纹路逐渐变浅。'},
  {id:'togo',name:'Togo',kind:'小牛皮',roughness:.68,depth:.125,appearance:'哑光，粒面圆润不规则，纹路与皱纹清晰。',touch:'干燥、强劲、丰满。',feel:'柔软不失强劲。',aging:'逐渐变得更柔软。'},
- {id:'swift',name:'Swift',kind:'小牛皮',roughness:.46,depth:.01,appearance:'几近平滑，细致光亮，纹理极淡。',touch:'温和且柔嫩。',feel:'柔软且大方。',aging:'越来越柔软。'},
+ {id:'swift',name:'Swift',kind:'小牛皮',roughness:.59,depth:.01,appearance:'几近平滑，细致光亮，纹理极淡。',touch:'温和且柔嫩。',feel:'柔软且大方。',aging:'越来越柔软。'},
  {id:'evercolor',name:'Evercolor',kind:'小牛皮',roughness:.55,depth:.075,appearance:'缎面光泽，规则的细小压纹。',touch:'纹理较 Evergrain 明显。',feel:'柔软且柔和。',aging:'逐渐变软，越用越有光泽。'},
  {id:'mysore',name:'Mysore',kind:'山羊皮',roughness:.48,depth:.1,appearance:'不规则而和谐的纹理，稍带亮度。',touch:'偏干，随着时间变柔软。',feel:'柔软。',aging:'变软，益发光滑。'}
 ];
 export async function loadPhotoMaterials(THREE){
  const result={};const loader=new THREE.TextureLoader();
  await Promise.all(leatherSpecs.map(async spec=>{
-  const maps=await Promise.all(['base','normal','rough'].map(kind=>loader.loadAsync(`./materials/baked/${spec.id}-${kind}.webp?v=20261002c`)));
+  const maps=await Promise.all(['base','normal','rough'].map(kind=>loader.loadAsync(`./materials/baked/${spec.id}-${kind}.webp?v=20261002f`)));
   maps.forEach((t,i)=>{t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;t.anisotropy=8;if(i===0)t.colorSpace=THREE.SRGBColorSpace});
-  result[spec.id]={map:maps[0],normalMap:maps[1],roughnessMap:maps[2]};
+  result[spec.id]={map:maps[0],normalMap:maps[1],roughnessMap:maps[2],specularIntensityMap:['epsom','evercolor','mysore'].includes(spec.id)?maps[2]:null};
  }));return result;
 }
