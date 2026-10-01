@@ -1,17 +1,17 @@
 import * as THREE from 'three';
 import {OrbitControls} from './vendor/OrbitControls.js';
 import {MM,LAYER,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,ATLAS_MM,STITCH_INSET,THREAD_DIAMETER,slotTop,makeLeatherSurface,setPressedGeometry,foldedTopGeometry,seamPath,stitchSegments,ringPoints,surfaceZ,seamSurfaceZ} from './leather-geometry.js?v=20261002d';
-import {loadPhotoMaterials,leatherSpecs} from './photo-materials.js?v=20261002d';
+import {loadPhotoMaterials,leatherSpecs} from './photo-materials.js?v=20261002e';
 import {seamCurves,linenGeometry,edgePaintGeometry,LINEN_PLIES} from './leather-details.js?v=20261002d';
 import {createStudioLighting,createStudioEnvironment} from './studio-lighting.js';
 const $=s=>document.querySelector(s);
 const palette=[{id:'black',name:'黑色',hex:'#363634'},{id:'craie',name:'粉笔白',hex:'#dacdbb'},{id:'gold',name:'金色',hex:'#8c5732'},{id:'caramel',name:'焦糖色',hex:'#ae7238'},{id:'etoupe',name:'大象灰',hex:'#736154'}];
 const foilColors=[{id:'gold',name:'金色',hex:'#e3bd60'},{id:'silver',name:'银色',hex:'#c7ccd1'},{id:'heat',name:'热压',hex:null}];
 const DEFAULT_VIEW_DISTANCE=9;
-const threads=[{id:'white',name:'白色',hex:'#eee9dc'},...palette];
+const threads=palette;
 const parts=[{id:'rear',name:'底皮'},{id:'body',name:'钞位'},{id:'accent',name:'卡位'},{id:'front',name:'下卡位'}];
 const steps=[...parts,{id:'thread',name:'缝线'},{id:'edge',name:'边油'},{id:'crease',name:'边缘装饰线'},{id:'monogram',name:'烫金文字'}];
-const initial={rearMaterial:'epsom',bodyMaterial:'epsom',accentMaterial:'epsom',frontMaterial:'epsom',rear:'black',body:'black',accent:'black',front:'black',edge:'black',thread:'white',crease:'single',monogram:'',foil:'gold'};
+const initial={rearMaterial:'epsom',bodyMaterial:'epsom',accentMaterial:'epsom',frontMaterial:'epsom',rear:'black',body:'black',accent:'black',front:'black',edge:'black',thread:'craie',crease:'single',monogram:'',foil:'gold'};
 let state={...initial},activeStep=0,renderer,scene,camera,controls,root,studio,materialMaps,fontData,ready=false,cameraMotion=null,needsRender=true;
 const meshes={},leatherMaterials={},threadObjects=[],letterGroup=new THREE.Group();
 const color=(id,list=palette)=>list.find(c=>c.id===id);
@@ -32,7 +32,6 @@ function renderOptions(){
  const {id,name}=current(),part=parts.some(p=>p.id===id);$('#part-title').textContent=name;
  $('#prev-part').disabled=activeStep===0;$('#next-part').disabled=activeStep===steps.length-1;
  document.querySelectorAll('[data-step]').forEach(b=>b.setAttribute('aria-current',String(+b.dataset.step===activeStep)));
- $('#options').classList.toggle('single',!part);
  if(part){$('#options').innerHTML=`<div class="leather-options" role="group" aria-label="${name}皮料">${leatherSpecs.map(l=>`<div class="leather-option"><button class="leather-button" data-material="${l.id}" aria-pressed="${state[id+'Material']===l.id}">${l.name}</button>${materialCard(l)}<button class="material-info-button" data-info="${l.id}" aria-label="查看 ${l.name} 皮料信息">详情</button></div>`).join('')}</div>${swatches(id,palette)}`}
  else if(id==='thread'||id==='edge')$('#options').innerHTML=`<div class="leather-options"><button class="leather-button fixed-option" aria-pressed="true" aria-label="${id==='thread'?'高品质亚麻手缝线':'意大利 FENICE 边油'}">${id==='thread'?'高品质亚麻手缝线':'意大利 FENICE 边油'}</button></div>${swatches(id,id==='thread'?threads:palette)}`;
  else if(id==='crease')$('#options').innerHTML=`<div class="detail-options" role="group" aria-label="边缘装饰线"><button class="choice" data-crease="single" aria-pressed="${state.crease==='single'}">有</button><button class="choice" data-crease="none" aria-pressed="${state.crease==='none'}">无</button></div>`;
@@ -105,7 +104,7 @@ function updateLetters(){
  for(const m of [...letterGroup.children]){m.geometry.dispose();letterGroup.remove(m)}
  if(!state.monogram){const face=meshes.front.children.find(m=>m.userData.surface&&!m.geometry.userData.back);if(face.userData.stamped){face.geometry.dispose();face.geometry=makeLeatherSurface('front');setPressedGeometry(face.geometry,state.crease==='single');face.userData.stamped=false}return;}
  const leather=leatherMaterials.front,finish=color(state.foil,foilColors),heat=state.foil==='heat';
- foilMaterial.color.copy(heat?leather.color:new THREE.Color(finish.hex));if(heat)foilMaterial.color.multiplyScalar(.78);
+ foilMaterial.color.copy(heat?leather.color:new THREE.Color(finish.hex));if(heat)foilMaterial.color.multiplyScalar(.50);
  foilMaterial.metalness=heat?0:1;foilMaterial.roughness=heat?leather.roughness:.32;foilMaterial.clearcoat=heat?0:.08;foilMaterial.envMapIntensity=heat?.72:1.15;
  foilMaterial.map=heat?leather.map:null;foilMaterial.normalMap=leather.normalMap;foilMaterial.normalScale.copy(leather.normalScale).multiplyScalar(.16);foilMaterial.roughnessMap=leather.roughnessMap;foilMaterial.needsUpdate=true;
  const shapes=glyphShapes(state.monogram,3.8*MM),g=new THREE.ExtrudeGeometry(shapes,{depth:.035*MM,bevelEnabled:true,bevelSize:.025*MM,bevelThickness:.018*MM,bevelSegments:2,curveSegments:10});g.computeBoundingBox();
@@ -135,7 +134,7 @@ function updateLetters(){
 }
 function applyMaterials(part=null){
  if(!ready)return;needsRender=true;
- for(const p of parts){if(part&&part!==p.id)continue;const l=spec(state[p.id+'Material']),m=leatherMaterials[p.id];m.color.set(color(state[p.id]).hex);Object.assign(m,materialMaps[l.id]);m.normalScale.set(l.id==='epsom'?1.18:1,l.id==='epsom'?1.18:1);m.roughness=l.roughness;m.envMapIntensity=.72;m.clearcoat=l.id==='swift'?.045:0;m.clearcoatRoughness=.5;m.needsUpdate=true}
+ for(const p of parts){if(part&&part!==p.id)continue;const l=spec(state[p.id+'Material']),m=leatherMaterials[p.id];m.color.set(color(state[p.id]).hex);Object.assign(m,materialMaps[l.id]);m.normalScale.set(l.id==='epsom'?1.18:1,l.id==='epsom'?1.18:1);m.roughness=l.roughness;m.specularIntensity=l.id==='epsom'?.42:.55;m.envMapIntensity=l.id==='epsom'?.62:.72;m.clearcoat=l.id==='swift'?.045:0;m.clearcoatRoughness=.5;m.needsUpdate=true}
  edgeMaterial.color.set(color(state.edge).hex);threadMaterial.color.set(color(state.thread,threads).hex).multiplyScalar(.85);updateLetters();
 }
 function moveCamera(pos,target=[0,0,0],distance=DEFAULT_VIEW_DISTANCE){
