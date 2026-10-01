@@ -1,76 +1,81 @@
 // Image-derived material experiment. Only the grain comes from the photographs;
 // normals and roughness are estimates, never represented as measured scan maps.
 export const photoSources = {
- "togo": {
-  "samplePixels": 768,
-  "file": "./materials/togo-source.jpg",
-  "crop": [
-   0.01875,
-   0.35625,
-   0.29375,
-   0.24375
-  ],
-  "contrast": 0.048,
-  "grainDepthMM": 0.160,
-  "label": "Hermès · Togo 官方皮面特写",
-  "url": "https://www.hermes.com/uk/en/product/sac-a-depeches-29-messenger-bag-H082688CK18/"
- },
- "epsom": {
-  "samplePixels": 900,
-  "file": "./materials/epsom-source.jpg",
-  "crop": [
-   0.1875,
-   0.7875,
-   0.375,
-   0.20625
-  ],
-  "contrast": 0.043,
-  "grainDepthMM": 0.105,
-  "label": "Hermès · Epsom 官方皮面特写",
-  "url": "https://www.hermes.com/us/en/product/sac-a-depeches-24-pouch-H086415CK18/"
- },
- "swift": {
-  "samplePixels": 384,
-  "file": "./materials/swift-source.jpg",
-  "crop": [
-   0.55,
-   0.29375,
-   0.2,
-   0.33125
-  ],
-  "contrast": 0.026,
-  "grainDepthMM": 0.020,
-  "label": "Hermès · Swift 官方皮面特写",
-  "url": "https://www.hermes.com/ca/en/product/glenan-compact-wallet-H086439CC37/"
- },
- "evercolor": {
-  "samplePixels": 768,
-  "file": "./materials/evercolor-source.jpg",
-  "crop": [
-   0.025,
-   0.3125,
-   0.4125,
-   0.40625
-  ],
-  "contrast": 0.035,
-  "grainDepthMM": 0.090,
-  "label": "Hermès · Evercolor 官方皮面特写",
-  "url": "https://www.hermes.cn/cn/en/product/faubourg-express-bag-H086337CC37/"
- },
- "mysore": {
-  "samplePixels": 900,
-  "file": "./materials/mysore-source.jpg",
-  "crop": [
-   0.4625,
-   0.08125,
-   0.3625,
-   0.14375
-  ],
-  "contrast": 0.045,
-  "grainDepthMM": 0.120,
-  "label": "Hermès · Mysore 官方皮面特写",
-  "url": "https://www.hermes.com/us/en/product/hermes-geta-bag-H083052CKBO/"
- }
+  "togo": {
+    "file": "./materials/togo-source.jpg",
+    "crop": [
+      0.56,
+      0.55,
+      0.17,
+      0.31
+    ],
+    "contrast": 0.048,
+    "grainDepthMM": 0.16,
+    "label": "Hermès · Rooroo 卡包 · Togo 纹理参考",
+    "url": "https://www.hermes.com/sg/en/product/hermes-rooroo-3cc-card-holder-H078523CAAA/",
+    "sourceWidthMM": 70,
+    "sourceWidthPixels": 416
+  },
+  "epsom": {
+    "file": "./materials/epsom-source.jpg",
+    "crop": [
+      0.315,
+      0.245,
+      0.355,
+      0.47
+    ],
+    "contrast": 0.043,
+    "grainDepthMM": 0.105,
+    "label": "Hermès · Calvi Duo 卡包 · Epsom",
+    "url": "https://www.hermes.cn/cn/zh/product/calvi-duo短卡包-H083035CKI2/",
+    "sourceWidthMM": 70,
+    "sourceWidthPixels": 358
+  },
+  "swift": {
+    "file": "./materials/swift-source.jpg",
+    "crop": [
+      0.3125,
+      0.3375,
+      0.375,
+      0.11
+    ],
+    "contrast": 0.026,
+    "grainDepthMM": 0.02,
+    "label": "Hermès · Hermèsnap 卡包 · Swift",
+    "url": "https://www.hermes.cn/cn/zh/product/hermesnap卡包-H085854CK37/",
+    "sourceWidthMM": 97,
+    "sourceWidthPixels": 335
+  },
+  "evercolor": {
+    "file": "./materials/evercolor-source.jpg",
+    "crop": [
+      0.57,
+      0.51,
+      0.23,
+      0.18
+    ],
+    "contrast": 0.035,
+    "grainDepthMM": 0.09,
+    "label": "Hermès · Citizen Twill 卡包 · Evercolor",
+    "url": "https://www.hermes.cn/cn/zh/product/citizen-twill卡包-H088017CAAE/",
+    "sourceWidthMM": 105,
+    "sourceWidthPixels": 574
+  },
+  "mysore": {
+    "file": "./materials/mysore-source.jpg",
+    "crop": [
+      0.34,
+      0.22,
+      0.32,
+      0.52
+    ],
+    "contrast": 0.045,
+    "grainDepthMM": 0.12,
+    "label": "Hermès · Calvi 卡包 · Mysore",
+    "url": "https://www.hermes.cn/cn/zh/product/calvi卡包-H044166CK28/",
+    "sourceWidthMM": 70,
+    "sourceWidthPixels": 330
+  }
 };
 function boxBlur(src,n,r){
  const h=src.length/n;
@@ -100,7 +105,7 @@ function quilt(src,n,size=2048){
 }
 export function derivePhotoMaps(image,spec,createCanvas){
  const iw=image.naturalWidth||image.width,ih=image.naturalHeight||image.height,[x,y,w,h]=spec.crop;
- const sourceSize=spec.samplePixels||768,sourceHeight=Math.round(sourceSize*(h*ih)/(w*iw)),canvas=createCanvas(sourceSize,sourceHeight),ctx=canvas.getContext('2d',{willReadFrequently:true});
+ const sourceSize=Math.round(w*iw/spec.sourceWidthPixels*spec.sourceWidthMM*2048/140),sourceHeight=Math.round(sourceSize*(h*ih)/(w*iw)),canvas=createCanvas(sourceSize,sourceHeight),ctx=canvas.getContext('2d',{willReadFrequently:true});
  ctx.imageSmoothingQuality='high';ctx.drawImage(image,x*iw,y*ih,w*iw,h*ih,0,0,sourceSize,sourceHeight);
  const original=ctx.getImageData(0,0,sourceSize,sourceHeight),luma=new Float32Array(sourceSize*sourceHeight);
  for(let i=0;i<luma.length;i++)luma[i]=(.2126*original.data[i*4]+.7152*original.data[i*4+1]+.0722*original.data[i*4+2])/255;
@@ -119,7 +124,7 @@ export function derivePhotoMaps(image,spec,createCanvas){
  const surface=boxBlur(relief,size,1);
  // Atlas spans 4.8 world units; MM=3.5/110. Derive both normal channels
  // from the same physical height scale, not an arbitrary contrast multiplier.
- const heightScale=spec.grainDepthMM*(3.5/110),texel=4.8/size;
+ const heightScale=spec.grainDepthMM*(3.5/107),texel=(140*3.5/107)/size;
  const base=createCanvas(size,size),normal=createCanvas(size,size),rough=createCanvas(size,size),height=createCanvas(size,size);
  const bc=base.getContext('2d'),nc=normal.getContext('2d'),rc=rough.getContext('2d'),hc=height.getContext('2d');
  const bi=bc.createImageData(size,size),ni=nc.createImageData(size,size),ri=rc.createImageData(size,size),hi=hc.createImageData(size,size);
