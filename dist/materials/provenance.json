@@ -1,68 +1,13 @@
 {
-  "atlasMM": 140,
-  "atlasPixels": 2048,
-  "sources": {
-    "togo": {
-      "crop": [
-        0.56,
-        0.55,
-        0.17,
-        0.31
-      ],
-      "sourceWidthMM": 70,
-      "sourceWidthPixels": 416,
-      "url": "https://www.hermes.com/sg/en/product/hermes-rooroo-3cc-card-holder-H078523CAAA/",
-      "label": "Hermès · Rooroo 卡包 · Togo 纹理参考"
-    },
-    "evercolor": {
-      "crop": [
-        0.57,
-        0.51,
-        0.23,
-        0.18
-      ],
-      "sourceWidthMM": 105,
-      "sourceWidthPixels": 574,
-      "url": "https://www.hermes.cn/cn/zh/product/citizen-twill卡包-H088017CAAE/",
-      "label": "Hermès · Citizen Twill 卡包 · Evercolor"
-    },
-    "epsom": {
-      "crop": [
-        0.315,
-        0.245,
-        0.355,
-        0.47
-      ],
-      "sourceWidthMM": 70,
-      "sourceWidthPixels": 358,
-      "url": "https://www.hermes.cn/cn/zh/product/calvi-duo短卡包-H083035CKI2/",
-      "label": "Hermès · Calvi Duo 卡包 · Epsom"
-    },
-    "swift": {
-      "crop": [
-        0.3125,
-        0.3375,
-        0.375,
-        0.11
-      ],
-      "sourceWidthMM": 97,
-      "sourceWidthPixels": 335,
-      "url": "https://www.hermes.cn/cn/zh/product/hermesnap卡包-H085854CK37/",
-      "label": "Hermès · Hermèsnap 卡包 · Swift"
-    },
-    "mysore": {
-      "crop": [
-        0.34,
-        0.22,
-        0.32,
-        0.52
-      ],
-      "sourceWidthMM": 70,
-      "sourceWidthPixels": 330,
-      "url": "https://www.hermes.cn/cn/zh/product/calvi卡包-H044166CK28/",
-      "label": "Hermès · Calvi 卡包 · Mysore"
-    }
-  },
-  "method": "Frontal product edge width in pixels / published width in mm; Epsom and Mysore photographed vertically use the published 70 mm short side. Approximate photographic calibration, not a scan.",
-  "togoIdentity": "Rooroo lists Togo, Epsom, Swift and Mysore. The green outer panel is assigned to Togo by grain appearance; panel-level species is not separately identified by Hermès."
+  "updated": "2026-10-02",
+  "source": "User-supplied Hermès product photographs in this repository, labeled with leather name and product dimensions in cm",
+  "calibration": "scale-calibration.json",
+  "generator": "../../scripts/build-materials.py",
+  "optimizer": "../../scripts/optimize-materials.py",
+  "atlas_mm": 160,
+  "normal_pixels": 4096,
+  "tiling": "ClampToEdge; no repeated UV wrapping",
+  "material_text": "User-supplied 皮料信息(2).md",
+  "method": "Log-luminance low-frequency removal, stochastic minimum-error photo quilting, shallow valley reconstruction, physical-height normals",
+  "maps": "Photo-derived visual reconstruction, not a measured scan"
 }

@@ -1,10 +1,21 @@
 import assert from 'node:assert/strict';
-import {CARD_WIDTH_MM,CARD_HEIGHT_MM,MM,HALF,BOTTOM,BODY_TOP,BOTTOM_RADIUS,LAYER,CREASE_WIDTH,CREASE_INSET,THREAD_DIAMETER,STITCH_PITCH,STITCH_INSET,outline,makeLeatherSurface,seamPath,topDistance} from '../dist/leather-geometry.js';
-const near=(a,b,t=1e-4)=>assert.ok(Math.abs(a-b)<t,`${a} != ${b}`);
-near(CARD_WIDTH_MM,107);near(CARD_HEIGHT_MM,70);near(BOTTOM_RADIUS/MM,10);near(LAYER/MM,1);near(CREASE_WIDTH/MM,.2);near(CREASE_INSET/MM,2);near(THREAD_DIAMETER/MM,.45);near(STITCH_PITCH/MM,3.38);near(STITCH_INSET/MM,3);
-const g=makeLeatherSurface(BODY_TOP,0,false);g.computeBoundingBox();near(g.boundingBox.max.x-g.boundingBox.min.x,107*MM);near(g.boundingBox.max.y-g.boundingBox.min.y,70*MM);
-for(const a of g.attributes.position.array)assert.ok(Number.isFinite(a));
-const points=outline(BODY_TOP).getPoints(120);near(Math.min(...points.map(p=>p.y)),BOTTOM);near(Math.max(...points.map(p=>p.x)),HALF);near(Math.max(...points.map(p=>p.y)),BODY_TOP);
-near(topDistance(0,BODY_TOP-2*MM,BODY_TOP)/MM,2);
-const p=seamPath();for(let i=0;i<=100;i++){const v=p.getPointAt(i/100);assert.ok(Math.abs(v.x)<=HALF-3*MM+1e-6);assert.ok(v.y>=BOTTOM+3*MM-1e-6)}
-console.log('PASS: 107 × 70 mm, R10, 1 mm layers, straight slot edges, 0.2/2 mm crease, 0.45/3/3.38 mm seam.');
+import {MM,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,LAYER,CREASE_INSET,CREASE_WIDTH,THREAD_DIAMETER,STITCH_PITCH,makeLeatherSurface,foldedTopGeometry,surfaceZ,openingOffset,setPressedGeometry,stitchSegments,slotTop} from '../dist/leather-geometry.js';
+const near=(a,b,e=1e-6)=>assert.ok(Math.abs(a-b)<e,`${a} != ${b}`);
+near(HALF*2/MM,107);near((BODY_TOP-BOTTOM)/MM,70);near(LAYER/MM,1);near(CREASE_INSET/MM,2);near(CREASE_WIDTH/MM,.2);near(THREAD_DIAMETER/MM,.45);
+for(const p of ['rear','body','accent','front']){
+ const g=makeLeatherSurface(p);for(const a of g.attributes.position.array)assert.ok(Number.isFinite(a));
+ const original=g.attributes.position.array.slice();setPressedGeometry(g,true);assert.ok(original.some((a,i)=>a!==g.attributes.position.array[i]));setPressedGeometry(g,false);for(let i=0;i<original.length;i++)near(original[i],g.attributes.position.array[i]);
+ const fold=foldedTopGeometry(p),positions=fold.attributes.position.array;
+ for(let i=0;i<positions.length;i+=3){const x=positions[i],y=positions[i+1],z=positions[i+2],yc=slotTop(x,PART_TOP[p])-.5*MM,zc=PART_Z[p]+.5*MM+openingOffset(p,x,yc);near(Math.hypot(y-yc,z-zc)/MM,.5,.00002)}
+ g.dispose();fold.dispose();
+}
+// Validate no overlap between individual solids across the usable planar domain.
+let gaps=0;
+for(let y=BOTTOM+4*MM;y<BODY_TOP-.6*MM;y+=.7*MM)for(let x=-HALF+4*MM;x<HALF-4*MM;x+=.7*MM){
+ const visible=['rear','body','accent','front'].filter(p=>y<slotTop(x,PART_TOP[p])-.6*MM);
+ for(let i=1;i<visible.length;i++){const back=surfaceZ(visible[i],x,y,true,false),previous=surfaceZ(visible[i-1],x,y,false,false);assert.ok(back>=previous-1e-7,`${visible[i]} intersects ${visible[i-1]}`)}gaps++;
+}
+assert.ok(openingOffset('body',0,BODY_TOP)/MM>1.8);near(openingOffset('body',HALF-3*MM,BODY_TOP),0);
+const seam=stitchSegments();assert.equal(seam.count,68);assert.equal(seam.segments.filter(s=>s.backstitch).length,4);assert.ok(Math.abs(seam.pitchMM-STITCH_PITCH/MM)<.03);
+assert.ok(seam.segments[2].b.x<seam.segments[2].a.x,'Left seam must rise to the right');
+console.log(`PASS: four separate solids; ${gaps} nonintersection samples; folded R0.5mm lips; real crease; ${seam.count} continuous stitches, ${seam.pitchMM.toFixed(3)}mm pitch, two return stitches per corner.`);

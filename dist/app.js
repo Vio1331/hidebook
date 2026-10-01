@@ -1,158 +1,158 @@
 import * as THREE from 'three';
-import { OrbitControls } from './vendor/OrbitControls.js';
-import { makeLeatherSurface, outline, seamPath, applyPressedLine, MM, LAYER, HALF, BOTTOM, BODY_TOP, ACCENT_TOP, FRONT_TOP, BOTTOM_RADIUS, STITCH_PITCH, THREAD_DIAMETER } from './leather-geometry.js';
-import { loadPhotoMaterials, photoSources } from './photo-materials.js';
-import { createStudioLighting, createStudioEnvironment } from './studio-lighting.js';
-
-// Customization data is independent of geometry. Replace these lists with actual leather samples.
-const palette = [
- {id:'forest',name:'森林绿',hex:'#176447'}, {id:'mustard',name:'芥末黄',hex:'#dca72b'},
- {id:'cognac',name:'干邑棕',hex:'#a45c35'}, {id:'burgundy',name:'酒红',hex:'#783e44'},
- {id:'navy',name:'午夜蓝',hex:'#2d425b'}, {id:'ivory',name:'燕麦白',hex:'#d7cdb8'},
- {id:'black',name:'曜石黑',hex:'#282d2b'}
-];
-const threads=[...palette,{id:'cream',name:'米白',hex:'#eee0b9'}];
-const leathers=[
- {id:'togo',name:'Togo',en:'自然颗粒 · 柔和哑光',description:'饱满、不规则的颗粒与深浅沟壑，转动模型观察柔和的颗粒高光。',cells:27,jitter:.86,strength:2.6,roughness:.80,coat:0},
- {id:'epsom',name:'Epsom',en:'细密压纹 · 利落挺括',description:'细密、有秩序的压纹，小颗粒的轮廓更清晰，光泽均匀而克制。',cells:39,jitter:.24,strength:2.0,roughness:.66,coat:0},
- {id:'swift',name:'Swift',en:'细腻光面 · 柔润光泽',description:'接近光面的细腻质感。主要通过柔和的宽幅反光表现，不刻意增加粗颗粒。',cells:0,jitter:0,strength:.22,roughness:.56,coat:0},
- {id:'evercolor',name:'Evercolor',en:'均匀细粒 · 温润半哑光',description:'均匀、较扁平的细颗粒，凹凸比 Togo 更收敛，呈现温润的半哑光。',cells:35,jitter:.48,strength:1.6,roughness:.69,coat:0},
- {id:'mysore',name:'Chèvre Mysore',en:'爱马仕山羊皮 · 细密光泽',description:'带方向感的细密不规则纹理，细小脊线与起伏让侧光更有变化。',cells:34,jitter:.94,strength:2.8,roughness:.53,coat:0}
-];
-const parts=[{id:'rear',name:'后底皮 · 外侧'},{id:'body',name:'底皮 · 内层'},{id:'accent',name:'上层 · 卡槽'},{id:'front',name:'下层 · 卡槽'}];
-const initial={rearMaterial:'togo',rear:'forest',bodyMaterial:'togo',accentMaterial:'epsom',frontMaterial:'togo',body:'forest',accent:'mustard',front:'forest',edge:'forest',thread:'forest',monogram:'',finish:'gold',crease:'single'};
-let state={...initial},activePart='front';
+import {OrbitControls} from './vendor/OrbitControls.js';
+import {MM,LAYER,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,ATLAS_MM,STITCH_INSET,THREAD_DIAMETER,slotTop,makeLeatherSurface,setPressedGeometry,foldedTopGeometry,seamPath,stitchSegments,surfaceZ,seamSurfaceZ} from './leather-geometry.js?v=20261002';
+import {loadPhotoMaterials,leatherSpecs} from './photo-materials.js?v=20261002';
+import {createStudioLighting,createStudioEnvironment} from './studio-lighting.js';
 const $=s=>document.querySelector(s);
-const color=(id,list=palette)=>list.find(x=>x.id===id);
-let renderer,scene,camera,controls,root,meshes={},stitchMaterial,letterMesh,edgeMaterial,ready=false;
-let photoMaterials;
-try {photoMaterials=await loadPhotoMaterials(THREE)} catch(error){
- $('#loading').textContent='皮料实拍加载失败，请刷新页面重试。';throw error;
+const palette=[{id:'forest',name:'森林绿',hex:'#18523c'},{id:'mustard',name:'芥末黄',hex:'#c7982f'},{id:'cognac',name:'干邑棕',hex:'#ae7048'},{id:'burgundy',name:'酒红',hex:'#763c43'},{id:'navy',name:'午夜蓝',hex:'#304657'},{id:'ivory',name:'燕麦白',hex:'#d8cfba'},{id:'black',name:'黑色',hex:'#222621'}];
+const threads=[...palette,{id:'cream',name:'米白',hex:'#efe5cb'}];
+const parts=[{id:'rear',name:'底皮'},{id:'body',name:'钞位'},{id:'accent',name:'卡位'},{id:'front',name:'下卡位'}];
+const steps=[...parts,{id:'thread',name:'缝线'},{id:'edge',name:'边油'},{id:'crease',name:'边缘装饰线'},{id:'monogram',name:'烫金文字'}];
+const initial={rearMaterial:'togo',bodyMaterial:'togo',accentMaterial:'epsom',frontMaterial:'togo',rear:'forest',body:'forest',accent:'mustard',front:'forest',edge:'forest',thread:'cream',crease:'single',monogram:''};
+let state={...initial},activeStep=0,renderer,scene,camera,controls,root,studio,materialMaps,fontData,ready=false,cameraMotion=null,needsRender=true;
+const meshes={},leatherMaterials={},threadObjects=[],letterGroup=new THREE.Group();
+const color=(id,list=palette)=>list.find(c=>c.id===id);
+const spec=id=>leatherSpecs.find(l=>l.id===id);
+const current=()=>steps[activeStep];
+const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function materialCard(l){return `<article class="material-card"><img src="./materials/baked/${l.id}-sample.jpg?v=20261002" alt="${l.name} 皮纹"><header><h3>${l.name}</h3><span>${l.kind}</span></header><dl><dt>外观</dt><dd>${l.appearance}</dd><dt>触感</dt><dd>${l.touch}</dd><dt>手感</dt><dd>${l.feel}</dd><dt>使用</dt><dd>${l.aging}</dd></dl></article>`}
+function swatches(id,list){return `<div class="option-label">颜色<span id="color-name">${color(state[id],list).name}</span></div><div class="swatches" role="group" aria-label="${current().name}颜色">${list.map(c=>`<button class="swatch" data-color="${c.id}" data-name="${c.name}" style="--swatch:${c.hex}" aria-label="${c.name}" aria-pressed="${state[id]===c.id}"></button>`).join('')}</div>`}
+$('#part-menu').innerHTML=steps.map((s,i)=>`<button data-step="${i}" aria-current="false">${s.name}<span>${String(i+1).padStart(2,'0')}</span></button>`).join('');
+function closeMenu(){$('#part-menu').hidden=true;$('#menu-toggle').setAttribute('aria-expanded','false')}
+$('#menu-toggle').onclick=()=>{const open=$('#part-menu').hidden;$('#part-menu').hidden=!open;$('#menu-toggle').setAttribute('aria-expanded',String(open))};
+document.addEventListener('click',e=>{if(!e.target.closest('#part-menu,#menu-toggle'))closeMenu()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
+document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>selectStep(+b.dataset.step));
+$('#prev-part').onclick=()=>selectStep(Math.max(0,activeStep-1));$('#next-part').onclick=()=>selectStep(Math.min(steps.length-1,activeStep+1));
+function selectStep(index){activeStep=index;closeMenu();renderOptions();focusPart(current().id)}
+function renderOptions(){
+ const {id,name}=current(),part=parts.some(p=>p.id===id);$('#part-title').textContent=name;$('#step-count').textContent=`${String(activeStep+1).padStart(2,'0')} / 08`;
+ $('#prev-part').disabled=activeStep===0;$('#next-part').disabled=activeStep===steps.length-1;
+ document.querySelectorAll('[data-step]').forEach(b=>b.setAttribute('aria-current',String(+b.dataset.step===activeStep)));
+ $('#options').classList.toggle('single',!part);
+ if(part){$('#options').innerHTML=`<div><div class="option-label">皮料<span id="leather-name">${spec(state[id+'Material']).name}</span></div><div class="leather-options" role="group" aria-label="${name}皮料">${leatherSpecs.map(l=>`<div class="leather-option"><button class="leather-button" data-material="${l.id}" aria-pressed="${state[id+'Material']===l.id}"><img src="./materials/baked/${l.id}-sample.jpg?v=20261002" alt=""><span>${l.name}</span></button>${materialCard(l)}<button class="material-info-button" data-info="${l.id}" aria-label="查看 ${l.name} 皮料信息">详情</button></div>`).join('')}</div></div><div>${swatches(id,palette)}</div>`}
+ else if(id==='thread'||id==='edge')$('#options').innerHTML=swatches(id,id==='thread'?threads:palette);
+ else if(id==='crease')$('#options').innerHTML=`<div class="detail-options" role="group" aria-label="边缘装饰线"><button class="choice" data-crease="none" aria-pressed="${state.crease==='none'}">无</button><button class="choice" data-crease="single" aria-pressed="${state.crease==='single'}">单线</button></div>`;
+ else $('#options').innerHTML=`<label class="option-label" for="monogram">烫金文字</label><div class="input-wrap"><input id="monogram" maxlength="7" pattern="[A-Za-z0-9]*" autocomplete="off" spellcheck="false" value="${state.monogram}" placeholder="VIO" aria-describedby="monogram-note"><span id="letter-count">${state.monogram.length} / 7</span></div><p class="input-note" id="monogram-note">英文或数字，最多 7 字</p>`;
+ document.querySelectorAll('[data-material]').forEach(b=>b.onclick=()=>{state[id+'Material']=b.dataset.material;document.querySelectorAll('[data-material]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('#leather-name').textContent=spec(b.dataset.material).name;applyMaterials(id)});
+ document.querySelectorAll('[data-info]').forEach(b=>b.onclick=()=>{$('#material-dialog-content').innerHTML=materialCard(spec(b.dataset.info));$('#material-dialog-content h3').id='material-dialog-title';$('#material-dialog').showModal()});
+ document.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{state[id]=b.dataset.color;document.querySelectorAll('[data-color]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('#color-name').textContent=color(state[id],threads).name;applyMaterials(id)});
+ document.querySelectorAll('[data-crease]').forEach(b=>b.onclick=()=>{state.crease=b.dataset.crease;needsRender=true;document.querySelectorAll('[data-crease]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));for(const m of Object.values(meshes))m.children.filter(x=>x.userData.surface).forEach(x=>setPressedGeometry(x.geometry,state.crease==='single'))});
+ if($('#monogram'))$('#monogram').oninput=e=>{const value=e.target.value.replace(/[^a-zA-Z0-9]/g,'').slice(0,7);state.monogram=value;e.target.value=value;$('#letter-count').textContent=`${value.length} / 7`;updateLetters()};
 }
-const {heights,normals,albedos,roughnessMaps,samples,photos}=photoMaterials;
-
-function setTab(id){
- document.querySelectorAll('[data-tab]').forEach(b=>{const active=b.dataset.tab===id;b.setAttribute('aria-selected',String(active));b.tabIndex=active?0:-1});
- document.querySelectorAll('.panel').forEach(p=>p.hidden=p.id!==`panel-${id}`);
+for(const d of document.querySelectorAll('dialog')){d.querySelector('.close-dialog').onclick=()=>d.close();d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close()}})}
+function toast(message){$('#toast').textContent=message;$('#toast').hidden=false;setTimeout(()=>$('#toast').hidden=true,2300)}
+$('#reset-all').onclick=()=>{state={...initial};applyMaterials();for(const m of Object.values(meshes))m.children.filter(x=>x.userData.surface).forEach(x=>setPressedGeometry(x.geometry,true));selectStep(0);resetView()};
+function summaryRows(){return parts.map(p=>[p.name,`${spec(state[p.id+'Material']).name} · ${color(state[p.id]).name}`]).concat([['缝线',color(state.thread,threads).name],['边油',color(state.edge).name],['边缘装饰线',state.crease==='none'?'无':'单线'],['烫金文字',state.monogram||'无']])}
+$('#save-design').onclick=()=>{try{localStorage.setItem('hidebook-design',JSON.stringify(state))}catch{}$('#design-summary').innerHTML=summaryRows().map(([a,b])=>`<div class="summary-row"><span>${a}</span><strong>${b}</strong></div>`).join('');$('#design-dialog').showModal()};
+$('#download-design').onclick=()=>{const data={...state};const blob=new Blob([JSON.stringify({name:'Hidebook',configuration:data,selection:Object.fromEntries(summaryRows())},null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hidebook-design.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('设计已下载')};
+try{const saved=JSON.parse(localStorage.getItem('hidebook-design'));if(saved&&typeof saved==='object'){for(const [k,v] of Object.entries(initial)){if(typeof saved[k]!=='string')continue;const valid=k.endsWith('Material')?leatherSpecs.map(x=>x.id):k==='crease'?['none','single']:k==='monogram'?null:(k==='thread'?threads:palette).map(x=>x.id);if(k==='monogram')state[k]=saved[k].replace(/[^a-zA-Z0-9]/g,'').slice(0,7);else if(valid.includes(saved[k]))state[k]=saved[k]}}}catch{}
+renderOptions();
+// Geometry authoring uses mm; the renderer uses a fixed conversion to world units.
+function makePiece(part){
+ const group=new THREE.Group(),material=new THREE.MeshPhysicalMaterial({color:color(state[part]).hex,metalness:0,ior:1.46,specularIntensity:.55,side:THREE.FrontSide});
+ group.name=part;leatherMaterials[part]=material;
+ for(const back of [false,true]){const face=new THREE.Mesh(makeLeatherSurface(part,back),material);face.name=part+(back?'-inside':'-face');face.userData.surface=true;setPressedGeometry(face.geometry,state.crease==='single');face.castShadow=face.receiveShadow=true;group.add(face)}
+ const fold=new THREE.Mesh(foldedTopGeometry(part),material);fold.name=part+'-fold-R0.5mm';fold.castShadow=fold.receiveShadow=true;group.add(fold);root.add(group);meshes[part]=group;
 }
-document.querySelectorAll('[data-tab]').forEach(b=>{b.addEventListener('click',()=>setTab(b.dataset.tab));b.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const tabs=[...document.querySelectorAll('[data-tab]')];let i=tabs.indexOf(b);i=e.key==='Home'?0:e.key==='End'?2:(i+(e.key==='ArrowRight'?1:-1)+3)%3;setTab(tabs[i].dataset.tab);tabs[i].focus()}})});
-$('#to-colors').onclick=()=>{setTab('color');$('#tab-color').focus()};
-$('#part-selector').innerHTML=parts.map(p=>`<button data-select-part="${p.id}" aria-pressed="false">${p.name}<small id="part-material-${p.id}"></small></button>`).join('');
-$('#materials').innerHTML=leathers.map(l=>`<button class="material-button" data-material="${l.id}" aria-pressed="false"><img class="material-sample" src="${samples[l.id]}" alt=""><span><span class="name">${l.name}</span><span class="caption">${l.en}</span></span><span class="check">✓</span></button>`).join('');
-function swatches(part,title,list){return `<div class="color-group"><div class="color-label">${title}<span id="label-${part}"></span></div><div class="swatches" role="group" aria-label="${title}">${list.map(c=>`<button class="swatch" data-part="${part}" data-color="${c.id}" style="--swatch:${c.hex}" title="${c.name}" aria-label="${title}：${c.name}" aria-pressed="false"></button>`).join('')}</div></div>`}
-$('#color-controls').innerHTML=swatches('rear','后底皮 · 外侧',palette)+swatches('body','底皮 · 内层',palette)+swatches('accent','上层 · 卡槽',palette)+swatches('front','下层 · 卡槽',palette);
-$('#thread-controls').innerHTML=swatches('thread','手缝线',threads);
-$('#edge-controls').innerHTML=swatches('edge','边油颜色',palette);
-const presets=[{name:'森野',body:'forest',accent:'mustard',front:'forest',thread:'forest'},{name:'日落',body:'cognac',accent:'ivory',front:'cognac',thread:'cream'},{name:'夜航',body:'navy',accent:'burgundy',front:'navy',thread:'ivory'}];
-$('#presets').innerHTML=presets.map((p,i)=>`<button class="preset" data-preset="${i}"><span class="preset-dot" style="--a:${color(p.body).hex};--b:${color(p.accent).hex}"></span>${p.name}</button>`).join('');
-function sync(){
- document.querySelectorAll('[data-material]').forEach(b=>b.setAttribute('aria-pressed',String(state[activePart+'Material']===b.dataset.material)));
- $('#material-description').textContent=leathers.find(l=>l.id===state[activePart+'Material']).description;
- document.querySelectorAll('[data-part]').forEach(b=>b.setAttribute('aria-pressed',String(state[b.dataset.part]===b.dataset.color)));
- for(const p of ['rear','body','accent','front','thread','edge'])$(`#label-${p}`).textContent=color(state[p],threads).name;
- $('#monogram').value=state.monogram;$('#letter-count').textContent=`${state.monogram.length} / 6`;
- document.querySelectorAll('[name=finish]').forEach(r=>r.checked=r.value===state.finish);
- $('#crease-style').value=state.crease;
- $('#summary').textContent=parts.map(p=>`${p.name}：${leathers.find(l=>l.id===state[p.id+'Material']).name} / ${color(state[p.id]).name}`).join('\n')+`\n压线：${{none:'无',single:'单线 · 2 mm'}[state.crease]}\n边油：${color(state.edge).name} · 缝线：${color(state.thread,threads).name}`+(state.monogram?`\n烫印：${state.monogram} / ${{gold:'烫金',silver:'烫银',blind:'素压'}[state.finish]}`:'\n烫印：无');
- $('#summary-colors').innerHTML=['rear','body','accent','front','edge','thread'].map(p=>`<span style="background:${color(state[p],threads).hex}"></span>`).join('');
- document.querySelectorAll('[data-select-part]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.selectPart===activePart)));
- for(const p of parts)$('#part-material-'+p.id).textContent=leathers.find(l=>l.id===state[p.id+'Material']).name;
- $('#editing-part').textContent=parts.find(p=>p.id===activePart).name;
- const leatherId=state[activePart+'Material'];$('#photo-preview').src=photos[leatherId];$('#photo-name').textContent=leathers.find(l=>l.id===leatherId).name+' · 实拍纹理';$('#photo-source').textContent=photoSources[leatherId].label;$('#photo-source').href=photoSources[leatherId].url;
- if(ready)applyMaterials();
-}
-document.querySelectorAll('[data-material]').forEach(b=>b.onclick=()=>{state[activePart+'Material']=b.dataset.material;sync()});
-document.querySelectorAll('[data-select-part]').forEach(b=>b.onclick=()=>{activePart=b.dataset.selectPart;sync()});
-document.querySelectorAll('[data-part]').forEach(b=>b.onclick=()=>{state[b.dataset.part]=b.dataset.color;sync()});
-document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{const {name,...p}=presets[+b.dataset.preset];Object.assign(state,p,{edge:p.body,rear:p.body});sync()});
-$('#monogram').oninput=e=>{state.monogram=e.target.value.replace(/[^a-zA-Z0-9 ]/g,'').toUpperCase().slice(0,6);sync()};
-document.querySelectorAll('[name=finish]').forEach(r=>r.onchange=()=>{state.finish=r.value;sync()});
-$('#reset-all').onclick=()=>{state={...initial};sync();setView('perspective')};
-$('#crease-style').onchange=e=>{state.crease=e.target.value;sync()};
-const dialog=$('#reference-dialog');$('#reference-button').onclick=()=>dialog.showModal();$('.close-dialog').onclick=()=>dialog.close();dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close()}});
-sync();
-
-// Four one-millimetre pieces, with a separate outward-facing rear backing.
-function piece(part,top,z,depth=LAYER){
- const bevel=.08*MM;
- const geo=new THREE.ExtrudeGeometry(outline(top),{depth:depth-2*bevel,bevelEnabled:true,bevelSegments:4,steps:1,bevelSize:0,bevelThickness:bevel,curveSegments:24});
- geo.groups=geo.groups.filter(g=>g.materialIndex===1);
- const mat=new THREE.MeshPhysicalMaterial({color:color(state[part]).hex,metalness:0,ior:1.46,specularIntensity:.65});applyPressedLine(mat,top);
- const mesh=new THREE.Mesh(geo,[mat,edgeMaterial]);mesh.position.z=z+bevel;mesh.name=part;
- for(const back of [false,true]){const face=new THREE.Mesh(makeLeatherSurface(top,back?-bevel:depth-bevel,back),mat);face.name=part+(back?'-back':'-front');mesh.add(face)}
- root.add(mesh);meshes[part]=mesh;return mesh;
-}
-function stitchPath(reverse=false){
- const curve=seamPath(),length=curve.getLength(),n=Math.floor(length/STITCH_PITCH)+1,margin=(length-(n-1)*STITCH_PITCH)/2;
- const geo=new THREE.CapsuleGeometry(THREAD_DIAMETER/2,STITCH_PITCH*.80-THREAD_DIAMETER,4,8),inst=new THREE.InstancedMesh(geo,stitchMaterial,n),dummy=new THREE.Object3D(),up=new THREE.Vector3(0,1,0);
- for(let i=0;i<n;i++){
-  const t=(margin+i*STITCH_PITCH)/length,p=curve.getPointAt(t),tangent=curve.getTangentAt(t),d=new THREE.Vector3(tangent.x,tangent.y,0);
-  d.applyAxisAngle(new THREE.Vector3(0,0,1),reverse?-.16:.16).normalize();
-  const surfaceZ=reverse?-2*LAYER:p.y<=FRONT_TOP?2*LAYER:p.y<=ACCENT_TOP?LAYER:0;
-  dummy.position.set(p.x,p.y,surfaceZ+(reverse?-1:1)*.07*MM);dummy.quaternion.setFromUnitVectors(up,d);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix);
- }
- inst.name=reverse?'rear-seam':'front-seam';inst.userData={pitchMM:3.38,diameterMM:.45,insetMM:3};root.add(inst);
-}
-function updateLetters(){
- const canvas=document.createElement('canvas');canvas.width=768;canvas.height=160;const ctx=canvas.getContext('2d');
- ctx.clearRect(0,0,768,160);ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='600 104px Arial';ctx.fillStyle='#ffffff';ctx.translate(384,84);ctx.scale(700/Math.max(1,ctx.measureText(state.monogram).width),1);ctx.fillText(state.monogram,0,0);
- const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
- if(letterMesh.material.map)letterMesh.material.map.dispose();letterMesh.material.map=tex;
- letterMesh.material.color.set(state.finish==='gold'?'#d9b357':state.finish==='silver'?'#d2d5d0':color(state.front).hex);
- if(state.finish==='blind')letterMesh.material.color.multiplyScalar(.50);
- letterMesh.material.metalness=state.finish==='blind'?0:.78;letterMesh.material.roughness=state.finish==='blind'?.78:.3;letterMesh.material.needsUpdate=true;letterMesh.visible=!!state.monogram.trim();
- // Keep short monograms compact; more letters grow leftward from the same right inset.
- const w=Math.max(.30,state.monogram.length*.105);letterMesh.scale.x=w;letterMesh.position.x=1.40-w/2;
-}
-function applyMaterials(){
- for(const {id:p} of parts){
-  const mat=meshes[p].material[0],id=state[p+'Material'],spec=leathers.find(l=>l.id===id);
-  mat.color.set(color(state[p]).hex);mat.envMapIntensity=.9;mat.map=albedos[id];mat.normalMap=normals[id];mat.normalScale.set(1,1);mat.roughnessMap=roughnessMaps[id];mat.roughness=spec.roughness;mat.clearcoat=0;mat.needsUpdate=true;mat.userData.pressed.value=state.crease==='single'?1:0;
- }
- edgeMaterial.color.set(color(state.edge).hex);stitchMaterial.color.set(color(state.thread,threads).hex);updateLetters();
-}
-// One continuous painted skin over the joined side and bottom edges, no visible strata.
+const edgeMaterial=new THREE.MeshPhysicalMaterial({roughness:.42,clearcoat:.16,clearcoatRoughness:.36,side:THREE.DoubleSide});
 function sealEdges(){
- const path=seamPath(BODY_TOP,0),positions=[],indices=[],segments=420,cross=12;
- const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t)};
- for(let i=0;i<=segments;i++){
-  const p=path.getPointAt(i/segments),tan=path.getTangentAt(i/segments),out=new THREE.Vector2(tan.y,-tan.x);
-  const zFront=LAYER*(1-smooth(ACCENT_TOP-.1*MM,ACCENT_TOP+.1*MM,p.y))+LAYER*(1-smooth(FRONT_TOP-.1*MM,FRONT_TOP+.1*MM,p.y));
-  for(let j=0;j<=cross;j++){const u=j/cross,bulge=Math.sin(u*Math.PI)*.02*MM;positions.push(p.x+out.x*bulge,p.y+out.y*bulge,-2*LAYER+(zFront+2*LAYER)*u);if(i<segments&&j<cross){const n=i*(cross+1)+j;indices.push(n,n+cross+1,n+1,n+1,n+cross+1,n+cross+2)}}
+ const path=seamPath(BODY_TOP-.5*MM,0),p=[],ind=[],n=850,cross=10;
+ for(let i=0;i<=n;i++){
+  const q=path.getPointAt(i/n),t=path.getTangentAt(i/n),out=new THREE.Vector2(-t.y,t.x),front=seamSurfaceZ(q.x,q.y),back=surfaceZ('rear',q.x,q.y,true);
+  for(let j=0;j<=cross;j++){const u=j/cross;p.push(q.x+out.x*Math.sin(u*Math.PI)*.035*MM,q.y+out.y*Math.sin(u*Math.PI)*.035*MM,back+(front-back)*u);if(i<n&&j<cross){const k=i*(cross+1)+j;ind.push(k,k+cross+1,k+1,k+1,k+cross+1,k+cross+2)}}
  }
- const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();const seal=new THREE.Mesh(g,edgeMaterial);seal.name='ContinuousEdgePaint';root.add(seal);
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setIndex(ind);g.computeVertexNormals();const m=new THREE.Mesh(g,edgeMaterial);m.name='side-and-bottom-edge-paint';m.castShadow=m.receiveShadow=true;root.add(m);
 }
-const views={front:[0,0,7],back:[0,0,-7],side:[6.8,.65,1.6],perspective:[2.0,1.1,6.4]};
-function setView(name){if(!ready)return;$('.viewer').classList.remove('macro-mode');const position=views[name];camera.position.set(...position);controls.target.set(0,0,0);controls.update();document.querySelectorAll('[data-view]').forEach(b=>{const active=b.dataset.view===name;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))})}
-document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));$('#reset-view').onclick=()=>setView('perspective');
-$('#macro-view').onclick=()=>{if(!ready)return;camera.position.set(.2,-.32,3.35);controls.target.set(0,-.32,0);controls.update();$('.viewer').classList.add('macro-mode');document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('active'))};
-$('#photo-enlarge').onclick=()=>{const id=state[activePart+'Material'];$('#material-photo-large').src=photos[id];$('#material-photo-title').textContent=leathers.find(l=>l.id===id).name+' · 皮面实拍';$('#material-photo-dialog').showModal()};
-$('#close-material-photo').onclick=()=>$('#material-photo-dialog').close();
+const threadMaterial=new THREE.MeshStandardMaterial({roughness:.72});
+const holeMaterial=new THREE.MeshStandardMaterial({color:'#241d17',roughness:1});
+function stitchZ(x,y,back){
+ if(back)return surfaceZ('rear',x,y,true)-.1*MM;
+ // A saddle thread spans the fold rather than terminating at the layer boundary.
+ let z=surfaceZ('body',x,y);
+ for(const part of ['accent','front']){const top=slotTop(x,PART_TOP[part]),u=THREE.MathUtils.smoothstep(top+.45*MM-y,0,1.05*MM);z=THREE.MathUtils.lerp(z,surfaceZ(part,x,y),u)}
+ return z+.11*MM;
+}
+function tube(points,r,material,name){const curve=new THREE.CatmullRomCurve3(points),g=new THREE.TubeGeometry(curve,Math.max(12,points.length*2),r,6,false),m=new THREE.Mesh(g,material);m.name=name;m.castShadow=m.receiveShadow=true;root.add(m);return m}
+function makeStitches(){
+ const {segments,holes,count,pitchMM}=stitchSegments();
+ for(const back of [false,true]){
+  for(const [i,s] of segments.entries()){
+   const pts=[];for(let j=0;j<=18;j++){const t=j/18,x=THREE.MathUtils.lerp(s.a.x,s.b.x,t),y=THREE.MathUtils.lerp(s.a.y,s.b.y,t),lift=Math.sin(Math.PI*t)*.025*MM+(s.backstitch?.12*MM:0);pts.push(new THREE.Vector3(x,y,stitchZ(x,y,back)+(back?-lift:lift)))}
+   threadObjects.push(tube(pts,THREAD_DIAMETER/2,threadMaterial,`${back?'rear':'front'}-${s.backstitch?'return':'stitch'}-${i}`));
+  }
+  const g=new THREE.SphereGeometry(.21*MM,6,4),mesh=new THREE.InstancedMesh(g,holeMaterial,holes.length),dummy=new THREE.Object3D();
+  holes.forEach((p,i)=>{dummy.position.set(p.x,p.y,(back?surfaceZ('rear',p.x,p.y,true):seamSurfaceZ(p.x,p.y))+(back?-.012:.012)*MM);dummy.scale.set(1,.7,.25);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix)});mesh.name=back?'rear-awl-holes':'front-awl-holes';root.add(mesh);
+ }
+ for(const side of [-1,1]){const x=side*(HALF-STITCH_INSET),y=BODY_TOP-.4*MM,zf=surfaceZ('body',x,y),zb=surfaceZ('rear',x,y,true),pts=[];for(let j=0;j<=14;j++){const t=j/14;pts.push(new THREE.Vector3(x,y+Math.sin(t*Math.PI)*.64*MM,THREE.MathUtils.lerp(zf,zb,t)))}threadObjects.push(tube(pts,THREAD_DIAMETER/2,threadMaterial,'mouth-anchor'))}
+ // Batch every thread into one draw call, including the return stitches.
+ const positions=[],normals=[],indices=[];let offset=0;
+ for(const mesh of threadObjects){const g=mesh.geometry;positions.push(...g.attributes.position.array);normals.push(...g.attributes.normal.array);for(const i of g.index.array)indices.push(i+offset);offset+=g.attributes.position.count;root.remove(mesh);g.dispose()}
+ const merged=new THREE.BufferGeometry();merged.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));merged.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));merged.setIndex(indices);const threadMesh=new THREE.Mesh(merged,threadMaterial);threadMesh.name='continuous-saddle-seam';threadMesh.castShadow=threadMesh.receiveShadow=true;root.add(threadMesh);
+ root.userData.seam={count,pitchMM,returnStitches:4,diameterMM:.45};
+}
+function glyphShapes(text,size){
+ const all=[];let offset=0;
+ for(const c of text){const glyph=fontData.glyphs[c];if(!glyph)continue;const p=new THREE.ShapePath(),a=glyph.o.split(' '),scale=size/fontData.resolution;let i=0;
+  while(i<a.length){const cmd=a[i++],n=()=>Number(a[i++])*scale;
+   if(cmd==='m'){const x=n(),y=n();p.moveTo(x+offset,y)}
+   else if(cmd==='l'){const x=n(),y=n();p.lineTo(x+offset,y)}
+   else if(cmd==='q'){const x=n(),y=n(),cx=n(),cy=n();p.quadraticCurveTo(cx+offset,cy,x+offset,y)}
+   else if(cmd==='b'){const x=n(),y=n(),x1=n(),y1=n(),x2=n(),y2=n();p.bezierCurveTo(x1+offset,y1,x2+offset,y2,x+offset,y)}
+  }all.push(...p.toShapes());offset+=(glyph.ha*scale+.22*MM);
+ }return all;
+}
+const foilMaterial=new THREE.MeshPhysicalMaterial({color:'#e3bd60',metalness:1,roughness:.25,clearcoat:.14,envMapIntensity:1.35});
+const stampWall=new THREE.MeshStandardMaterial({color:'#493721',roughness:.8});
+function updateLetters(){
+ if(!ready||!fontData)return;needsRender=true;
+ for(const m of [...letterGroup.children]){m.geometry.dispose();letterGroup.remove(m)}
+ if(!state.monogram){const face=meshes.front.children.find(m=>m.userData.surface&&!m.geometry.userData.back);if(face.userData.stamped){face.geometry.dispose();face.geometry=makeLeatherSurface('front');setPressedGeometry(face.geometry,state.crease==='single');face.userData.stamped=false}return;}
+ const shapes=glyphShapes(state.monogram,3.8*MM),g=new THREE.ExtrudeGeometry(shapes,{depth:.035*MM,bevelEnabled:true,bevelSize:.025*MM,bevelThickness:.018*MM,bevelSegments:2,curveSegments:10});g.computeBoundingBox();
+ const width=g.boundingBox.max.x-g.boundingBox.min.x,x=HALF-9*MM-width-g.boundingBox.min.x,y=BOTTOM+11*MM-g.boundingBox.min.y;
+ const stampDepth=.09*MM;
+ // Cut actual glyph-shaped openings in the leather face, including counters.
+ const translated=shapes.map(s=>{const g=new THREE.Shape(s.getPoints(12).map(p=>new THREE.Vector2(p.x+x,p.y+y)));g.holes=s.holes.map(h=>new THREE.Path(h.getPoints(12).map(p=>new THREE.Vector2(p.x+x,p.y+y))));return g});
+ const face=meshes.front.children.find(m=>m.userData.surface&&!m.geometry.userData.back);
+ face.userData.stamped=true;face.geometry.dispose();face.geometry=makeLeatherSurface('front',false,translated);setPressedGeometry(face.geometry,state.crease==='single');
+ const wallG=new THREE.ExtrudeGeometry(shapes,{depth:stampDepth,bevelEnabled:false,curveSegments:12});wallG.groups=wallG.groups.filter(g=>g.materialIndex===1);
+ const wa=wallG.attributes.position.array;for(let i=0;i<wa.length;i+=3){wa[i]+=x;wa[i+1]+=y;wa[i+2]+=surfaceZ('front',wa[i],wa[i+1])-stampDepth}wallG.attributes.position.needsUpdate=true;wallG.computeVertexNormals();
+ const walls=new THREE.Mesh(wallG,[stampWall,stampWall]);walls.name='stamp-recess-walls';letterGroup.add(walls);
+ // Conform real metal glyph geometry to the subtly bowed leather surface.
+ const positions=g.attributes.position.array;for(let i=0;i<positions.length;i+=3){positions[i]+=x;positions[i+1]+=y;positions[i+2]+=surfaceZ('front',positions[i],positions[i+1])-stampDepth+.025*MM}g.attributes.position.needsUpdate=true;g.computeVertexNormals();
+ const m=new THREE.Mesh(g,[foilMaterial,stampWall]);m.name='Freeman-recessed-gold';m.castShadow=m.receiveShadow=true;letterGroup.add(m);
+}
+function applyMaterials(part=null){
+ if(!ready)return;needsRender=true;
+ for(const p of parts){if(part&&part!==p.id)continue;const l=spec(state[p.id+'Material']),m=leatherMaterials[p.id];m.color.set(color(state[p.id]).hex);Object.assign(m,materialMaps[l.id]);m.normalScale.set(1,1);m.roughness=l.roughness;m.envMapIntensity=.72;m.clearcoat=l.id==='swift'?.045:0;m.clearcoatRoughness=.5;m.needsUpdate=true}
+ edgeMaterial.color.set(color(state.edge).hex);threadMaterial.color.set(color(state.thread,threads).hex);updateLetters();
+}
+function moveCamera(pos,target=[0,0,0]){
+ if(!ready)return;cameraMotion={start:performance.now(),from:camera.position.clone(),to:new THREE.Vector3(...pos),targetFrom:controls.target.clone(),targetTo:new THREE.Vector3(...target),duration:reducedMotion?0:800};
+ document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed','false'));
+}
+function focusPart(id){
+ const preset={rear:{p:[-1.3,.65,-5.7],t:[0,.05,0]},body:{p:[1.0,2.1,5.6],t:[0,.38,0]},accent:{p:[.65,1.0,5.15],t:[0,.19,.07]},front:{p:[.8,.45,5.2],t:[0,-.26,.08]},thread:{p:[-.6,.25,4.8],t:[-.16,-.10,.07]},edge:{p:[4.4,1.4,4.2],t:[0,-.1,0]},crease:{p:[.5,.6,4.5],t:[0,-.1,0]},monogram:{p:[.55,-.24,3.25],t:[.57,-.51,.07]}}[id];moveCamera(preset.p,preset.t);
+}
+function resetView(){moveCamera([1.2,.8,6.0],[0,0,0])}
+const views={front:[0,0,5.8],back:[0,0,-5.8],side:[6.2,3.5,2.1]};
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{moveCamera(views[b.dataset.view]);b.setAttribute('aria-pressed','true')});$('#reset-view').onclick=resetView;$('#macro-view').onclick=()=>moveCamera([.35,.35,3.4],[0,-.05,0]);
 function init(){
- const host=$('#scene');scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(34,1,.1,100);
- renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(window.devicePixelRatio,2.5));renderer.shadowMap.enabled=false;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;host.appendChild(renderer.domElement);
- renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();$('#loading').textContent='3D 预览暂时中断，请刷新页面重试。';$('#loading').hidden=false});
- const studio=createStudioLighting(scene,camera);
- scene.environment=createStudioEnvironment(renderer);scene.environmentIntensity=1;
- root=new THREE.Group();root.position.set(0,-.1,0);scene.add(root);
- edgeMaterial=new THREE.MeshPhysicalMaterial({color:color(state.edge).hex,roughness:.38,clearcoat:.22,clearcoatRoughness:.30,side:THREE.DoubleSide});
- piece('rear',BODY_TOP,-2*LAYER);piece('body',BODY_TOP,-LAYER);piece('accent',ACCENT_TOP,0);piece('front',FRONT_TOP,LAYER);sealEdges();
- stitchMaterial=new THREE.MeshStandardMaterial({color:'#37684a',roughness:.86});stitchPath();stitchPath(true);
- letterMesh=new THREE.Mesh(new THREE.PlaneGeometry(1,.135),new THREE.MeshStandardMaterial({transparent:true,depthWrite:false,alphaTest:.06,polygonOffset:true,polygonOffsetFactor:-1}));letterMesh.position.set(1.1,-.76,2*LAYER+.09*MM);root.add(letterMesh);
- controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.075;controls.enablePan=false;controls.minDistance=3.0;controls.maxDistance=10;controls.maxPolarAngle=Math.PI;controls.rotateSpeed=.8;controls.zoomSpeed=.65;
- controls.addEventListener('start',()=>document.querySelectorAll('[data-view]').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-pressed','false')}));
- ready=true;applyMaterials();setView('perspective');
- function resize(){const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/h;camera.fov=w/h<1?42:34;camera.setViewOffset(w,h,0,-h*.075,w,h);camera.updateProjectionMatrix();renderer.setSize(w,h)}new ResizeObserver(resize).observe(host);resize();
- host.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','+','-','='].includes(e.key))return;e.preventDefault();const offset=camera.position.clone().sub(controls.target);const spherical=new THREE.Spherical().setFromVector3(offset);if(e.key==='ArrowLeft')spherical.theta-=.16;if(e.key==='ArrowRight')spherical.theta+=.16;if(e.key==='ArrowUp')spherical.phi-=.13;if(e.key==='ArrowDown')spherical.phi+=.13;if(e.key==='+'||e.key==='=')spherical.radius-=.35;if(e.key==='-')spherical.radius+=.35;spherical.phi=Math.max(.02,Math.min(Math.PI-.02,spherical.phi));spherical.radius=Math.max(controls.minDistance,Math.min(controls.maxDistance,spherical.radius));camera.position.copy(new THREE.Vector3().setFromSpherical(spherical).add(controls.target));controls.update()});
- $('#loading').hidden=true;
- const renderFrame=()=>{controls.update();studio.update();renderer.render(scene,camera)};
- renderer.setAnimationLoop(renderFrame);
- document.addEventListener('visibilitychange',()=>renderer.setAnimationLoop(document.hidden?null:renderFrame));
+ const host=$('#scene');scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(32,1,.08,50);renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.98;renderer.shadowMap.enabled=false;renderer.shadowMap.type=THREE.PCFSoftShadowMap;host.appendChild(renderer.domElement);
+ scene.environment=createStudioEnvironment(renderer);studio=createStudioLighting(scene,camera);
+ const key=studio.lights[0];key.castShadow=true;key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=-2.4;key.shadow.camera.right=2.4;key.shadow.camera.top=2;key.shadow.camera.bottom=-2;key.shadow.camera.near=.1;key.shadow.camera.far=16;key.shadow.bias=-.000035;key.shadow.normalBias=.0001;
+ root=new THREE.Group();scene.add(root);parts.forEach(p=>makePiece(p.id));sealEdges();makeStitches();root.add(letterGroup);
+ controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.09;controls.enablePan=false;controls.minDistance=2.6;controls.maxDistance=9;controls.rotateSpeed=.7;controls.zoomSpeed=.7;
+ controls.addEventListener('start',()=>{cameraMotion=null;document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed','false'))});
+ ready=true;applyMaterials();camera.position.set(1.2,.8,6);controls.update();
+ function resize(){const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/h;camera.fov=w/h<1.1?43:32;camera.updateProjectionMatrix();renderer.setSize(w,h);needsRender=true}new ResizeObserver(resize).observe(host);resize();
+ const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();let down;
+ renderer.domElement.addEventListener('pointerdown',e=>down={x:e.clientX,y:e.clientY,time:performance.now()});
+ renderer.domElement.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down.x,e.clientY-down.y)>5||performance.now()-down.time>500)return;const r=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-r.left)/r.width*2-1,1-(e.clientY-r.top)/r.height*2);raycaster.setFromCamera(pointer,camera);const hit=raycaster.intersectObjects(Object.values(meshes),true)[0];if(hit){const part=hit.object.parent.name;selectStep(parts.findIndex(p=>p.id===part))}});
+ host.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','+','-','='].includes(e.key))return;e.preventDefault();cameraMotion=null;const s=new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));if(e.key==='ArrowLeft')s.theta-=.12;if(e.key==='ArrowRight')s.theta+=.12;if(e.key==='ArrowUp')s.phi-=.12;if(e.key==='ArrowDown')s.phi+=.12;if(['+','='].includes(e.key))s.radius-=.3;if(e.key==='-')s.radius+=.3;s.phi=Math.max(.05,Math.min(Math.PI-.05,s.phi));s.radius=Math.max(2.6,Math.min(9,s.radius));camera.position.copy(new THREE.Vector3().setFromSpherical(s).add(controls.target));controls.update()});
+ renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();$('#loading').textContent='预览已中断，请刷新';$('#loading').hidden=false});$('#loading').hidden=true;
+ function frame(){let changed=!!cameraMotion;if(cameraMotion){const a=cameraMotion,t=a.duration?Math.min(1,(performance.now()-a.start)/a.duration):1,u=t*t*(3-2*t);camera.position.lerpVectors(a.from,a.to,u);controls.target.lerpVectors(a.targetFrom,a.targetTo,u);if(t===1)cameraMotion=null}changed=controls.update()||changed;if(changed||needsRender){studio.update();renderer.render(scene,camera);needsRender=false}}renderer.setAnimationLoop(frame);document.addEventListener('visibilitychange',()=>renderer.setAnimationLoop(document.hidden?null:frame));
+ // A read-only diagnostics surface supports model QA without reaching into WebGL.
+ window.hidebook={get configuration(){return {...state}},get model(){return {seam:root.userData.seam,layers:parts.map(p=>({name:p.name,part:p.id,foldRadiusMM:.5,vertices:meshes[p.id].children[0].geometry.attributes.position.count})),atlasMM:ATLAS_MM}},get camera(){return {position:camera.position.toArray(),target:controls.target.toArray()}}};
 }
-try{init()}catch(error){console.error(error);$('#loading').textContent='当前浏览器无法显示 3D，请开启硬件加速或换用支持 WebGL 的浏览器。';}
-
-// Progressive enhancement: browsers without WebMCP retain the complete normal UI.
-if(document.modelContext?.registerTool){const lifecycle=new AbortController();
- const tools=[{name:'read_cardholder_configuration',description:'读取当前卡包皮料、分区颜色、缝线和刻字。',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute:()=>({...state})},
- {name:'configure_cardholder',description:'更新卡包的预览搭配，不下单。',inputSchema:{type:'object',properties:{rearMaterial:{type:'string',enum:leathers.map(x=>x.id)},rear:{type:'string',enum:palette.map(x=>x.id)},bodyMaterial:{type:'string',enum:leathers.map(x=>x.id)},accentMaterial:{type:'string',enum:leathers.map(x=>x.id)},frontMaterial:{type:'string',enum:leathers.map(x=>x.id)},edge:{type:'string',enum:palette.map(x=>x.id)},body:{type:'string',enum:palette.map(x=>x.id)},accent:{type:'string',enum:palette.map(x=>x.id)},front:{type:'string',enum:palette.map(x=>x.id)},thread:{type:'string',enum:threads.map(x=>x.id)},monogram:{type:'string',maxLength:6},crease:{type:'string',enum:['none','single']},finish:{type:'string',enum:['gold','silver','blind']}},additionalProperties:false},annotations:{readOnlyHint:false},execute:input=>{if(!input||typeof input!=='object'||Array.isArray(input))throw Error('输入必须为对象');const proposed={...state};for(const [k,v]of Object.entries(input)){if(!Object.hasOwn(initial,k)||typeof v!=='string')throw Error('无效选项');if(k==='monogram'){if(!/^[A-Za-z0-9 ]{0,6}$/.test(v))throw Error('刻字仅支持最多6位英文字母或数字');proposed[k]=v.toUpperCase()}else{const allowed=k.endsWith('Material')?leathers.map(x=>x.id):k==='crease'?['none','single']:k==='finish'?['gold','silver','blind']:(k==='thread'?threads:palette).map(x=>x.id);if(!allowed.includes(v))throw Error('无效选项');proposed[k]=v}}state=proposed;sync();return {...state}}}];
- for(const tool of tools){try{Promise.resolve(document.modelContext.registerTool(tool,{signal:lifecycle.signal})).catch(console.warn)}catch(e){console.warn(e)}}window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});}
+try{[materialMaps,fontData]=await Promise.all([loadPhotoMaterials(THREE),fetch('./freeman.typeface.json').then(r=>{if(!r.ok)throw Error('Freeman 读取失败');return r.json()})]);init()}catch(e){console.error(e);$('#loading').textContent='预览加载失败，请刷新';}
