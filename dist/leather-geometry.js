@@ -35,17 +35,17 @@ export function grooveDepth(x,y,top){
 export function surfaceZ(part,x,y,back=false,pressed=true){
  return PART_Z[part]+(back?0:LAYER)+openingOffset(part,x,y)-(pressed?(back?-1:1)*grooveDepth(x,y,PART_TOP[part]):0);
 }
-// Densely sampled concentric boundaries place real vertices on the 0.2mm groove.
+// Densely sampled concentric boundaries place real vertices on the 0.28mm groove.
 // The interior is subdivided only enough to reproduce gentle leather bowing.
 export function ringPoints(top,inset){
  const h=HALF-inset,r=BOTTOM_RADIUS-inset,b=BOTTOM+inset,pts=[];
  const line=(ax,ay,bx,by,n)=>{for(let i=0;i<n;i++)pts.push(new THREE.Vector2(ax+(bx-ax)*i/n,ay+(by-ay)*i/n))};
- line(-h+r,b,h-r,b,170);
- for(let i=0;i<48;i++){const a=-Math.PI/2+Math.PI/2*i/48;pts.push(new THREE.Vector2(h-r+r*Math.cos(a),b+r+r*Math.sin(a)))}
- line(h,b+r,h,slotTop(h,top)-inset,120);
- for(let i=0;i<220;i++){const x=h-2*h*i/220;pts.push(new THREE.Vector2(x,slotTop(x,top)-inset))}
- line(-h,slotTop(-h,top)-inset,-h,b+r,120);
- for(let i=0;i<48;i++){const a=Math.PI+Math.PI/2*i/48;pts.push(new THREE.Vector2(-h+r+r*Math.cos(a),b+r+r*Math.sin(a)))}
+ line(-h+r,b,h-r,b,100);
+ for(let i=0;i<32;i++){const a=-Math.PI/2+Math.PI/2*i/32;pts.push(new THREE.Vector2(h-r+r*Math.cos(a),b+r+r*Math.sin(a)))}
+ line(h,b+r,h,slotTop(h,top)-inset,80);
+ for(let i=0;i<144;i++){const x=h-2*h*i/144;pts.push(new THREE.Vector2(x,slotTop(x,top)-inset))}
+ line(-h,slotTop(-h,top)-inset,-h,b+r,80);
+ for(let i=0;i<32;i++){const a=Math.PI+Math.PI/2*i/32;pts.push(new THREE.Vector2(-h+r+r*Math.cos(a),b+r+r*Math.sin(a)))}
  return pts;
 }
 export function makeLeatherSurface(part,back=false,stampShapes=[]){
@@ -71,8 +71,8 @@ export function makeLeatherSurface(part,back=false,stampShapes=[]){
   // Every inner contour shares vertices with the previous contour. The old
   // independent rectangular grid left uncovered crescents at rounded corners.
   const cy=(BOTTOM+top)/2;
-  for(let j=1;j<=24;j++){
-   const scale=1-j/25,ids=pts.map(p=>add(p.x*scale,cy+(p.y-cy)*scale));
+  for(let j=1;j<=16;j++){
+   const scale=1-j/17,ids=pts.map(p=>add(p.x*scale,cy+(p.y-cy)*scale));
    for(let i=0;i<ids.length;i++){const k=(i+1)%ids.length;indices.push(previous[i],previous[k],ids[i],previous[k],ids[k],ids[i])}
    previous=ids;
   }
@@ -83,7 +83,7 @@ export function makeLeatherSurface(part,back=false,stampShapes=[]){
 }
 export function setPressedGeometry(geo,pressed){const a=geo.attributes.position.array,r=geo.userData.rest,{part,back}=geo.userData;for(let i=0;i<a.length;i+=3)a[i+2]=r[i+2]-(pressed?(back?-1:1)*grooveDepth(a[i],a[i+1],PART_TOP[part]):0);geo.attributes.position.needsUpdate=true;geo.computeVertexNormals()}
 export function foldedTopGeometry(part){
- const top=PART_TOP[part],p=[],uv=[],ind=[],nx=300,nr=24;
+ const top=PART_TOP[part],p=[],uv=[],ind=[],nx=180,nr=16;
  for(let i=0;i<=nx;i++){const x=-HALF+2*HALF*i/nx;for(let j=0;j<=nr;j++){
   const a=j/nr*Math.PI,y=slotTop(x,top)-.5*MM+.5*MM*Math.sin(a),z=PART_Z[part]+.5*MM+.5*MM*Math.cos(a)+openingOffset(part,x,slotTop(x,top)-.5*MM);
   p.push(x,y,z);const off={rear:[.025,.015],body:[-.025,-.015],accent:[.04,-.06],front:[-.04,.06]}[part];uv.push(x/(ATLAS_MM*MM)+.5+off[0],(top-.5*MM+.5*MM*a)/(ATLAS_MM*MM)+.5+off[1]);
@@ -106,7 +106,7 @@ export function stitchSegments(){
   const slant=.58*MM;const pa=a.clone().addScaledVector(t,.12*MM).addScaledVector(n,slant/2),pb=b.clone().addScaledVector(t,-.12*MM).addScaledVector(n,-slant/2);
   segments.push({a:pa,b:pb,backstitch:false});
  }
- // Exactly two return stitches at either mouth corner, plus fold-over anchoring.
- for(const index of [0,1,count-2,count-1])segments.push({...segments[index],backstitch:true});
+ // Return below each continuous wrap. The wrap itself is the other return stitch.
+ for(const index of [1,count-2])segments.push({...segments[index],backstitch:true});
  return {segments,holes,pitchMM:pitch/MM,count};
 }

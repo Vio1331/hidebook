@@ -15,16 +15,16 @@
       "depth": 0.125
     },
     "epsom": {
-      "file": "Epsom-tarmac-13.8x9.7.jpg",
+      "file": "Epsom-mc²-euclide-10.5x7.5.jpg",
       "crop": [
-        600,
-        570,
-        1430,
-        1550
+        650,
+        470,
+        1320,
+        1400
       ],
-      "product_px": 988,
-      "product_mm": 97,
-      "depth": 0.075
+      "product_px": 900,
+      "product_mm": 75,
+      "depth": 0.11
     },
     "evercolor": {
       "file": "Evercolor-h-sellier-11x9.2.webp",

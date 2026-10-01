@@ -11,7 +11,7 @@ SIZE=4096;SPAN=160;PX=SIZE/SPAN
 # Pixels refer to the supplied 2000px product photos. Product short side, not canvas.
 SOURCES={
  'togo':dict(file='Togo-ulysse-22x17.webp',crop=[520,330,1400,1670],product_px=1254,product_mm=170,depth=.125),
- 'epsom':dict(file='Epsom-tarmac-13.8x9.7.jpg',crop=[600,570,1430,1550],product_px=988,product_mm=97,depth=.075),
+ 'epsom':dict(file='Epsom-mc²-euclide-10.5x7.5.jpg',crop=[650,470,1320,1400],product_px=900,product_mm=75,depth=.11),
  'evercolor':dict(file='Evercolor-h-sellier-11x9.2.webp',crop=[520,580,1450,1320],product_px=1180,product_mm=110,depth=.075),
  'mysore':dict(file='Mysore-calvi-duo-10.5x7(2).webp',crop=[490,300,1490,1680],product_px=1150,product_mm=70,depth=.10),
  'swift':dict(file='Swift-magsafe-9.6x6.6(3).jpg',crop=[780,550,1140,1080],product_px=880,product_mm=66,depth=.010),
@@ -71,7 +71,7 @@ for k,(name,s) in enumerate(SOURCES.items()):
  norm=np.sqrt(gx*gx+gy*gy+1)
  normal=np.stack([(1-gx/norm)*127.5,(1+gy/norm)*127.5,(1+1/norm)*127.5],axis=-1)
  valley=np.clip(1-relief,0,1)
- tone=np.clip(.987-.042*valley,.92,1)*255
+ tone=np.clip(.987-(.10 if name=='epsom' else .042)*valley,.87 if name=='epsom' else .92,1)*255
  rough=np.clip(.86+.12*valley,0,1)*255
  save(normal,f'{name}-normal.webp');save(tone,f'{name}-base.webp',False)
  save(rough,f'{name}-rough.webp');save(np.clip(relief,0,1)*255,f'{name}-height.webp')

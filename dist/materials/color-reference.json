@@ -1,0 +1,60 @@
+{
+  "checked": "2026-10-02",
+  "colors": [
+    {
+      "id": "black",
+      "name": "黑色",
+      "code": "89",
+      "hex": "#363634",
+      "product": "Calvi",
+      "source": "https://www.hermes.cn/cn/zh/product/calvi卡包-H044164CK89/",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/044164CK89_thumbnail_20?%24product_item_grid_g%24=&defaultimage=044164CK89_set&hei=65&wid=65",
+      "sampling": "Median RGB from 25×25px central leather region of official product colour thumbnail; UI preview RGB, not measured leather reflectance."
+    },
+    {
+      "id": "craie",
+      "name": "粉笔白",
+      "code": "10",
+      "hex": "#dacdbb",
+      "product": "Calvi",
+      "source": "https://www.hermes.cn/cn/zh/product/calvi卡包-H044164CK10/",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/044164CK10_thumbnail_20?%24product_item_grid_g%24=&defaultimage=044164CK10_set&hei=65&wid=65",
+      "sampling": "Median RGB from 25×25px central leather region of official product colour thumbnail; UI preview RGB, not measured leather reflectance."
+    },
+    {
+      "id": "gold",
+      "name": "金色",
+      "code": "37",
+      "hex": "#8c5732",
+      "product": "Calvi",
+      "source": "https://www.hermes.cn/cn/zh/product/calvi卡包-H044164CK37/",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/044164CK37_thumbnail_20?%24product_item_grid_g%24=&defaultimage=044164CK37_set&hei=65&wid=65",
+      "sampling": "Median RGB from 25×25px central leather region of official product colour thumbnail; UI preview RGB, not measured leather reflectance."
+    },
+    {
+      "id": "caramel",
+      "name": "焦糖色",
+      "code": "28",
+      "hex": "#ae7238",
+      "product": "Calvi",
+      "source": "https://www.hermes.cn/cn/zh/product/calvi卡包-H044166CK28/",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/044166CK28_thumbnail_20?%24product_item_grid_g%24=&defaultimage=044166CK28_set&hei=65&wid=65",
+      "sampling": "Median RGB from 25×25px central leather region of official product colour thumbnail; UI preview RGB, not measured leather reflectance."
+    },
+    {
+      "id": "etoupe",
+      "name": "大象灰",
+      "code": "18",
+      "hex": "#736154",
+      "product": "Calvi",
+      "source": "https://www.hermes.cn/cn/zh/product/calvi卡包-H044164CK18/",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/044164CK18_thumbnail_20?%24product_item_grid_g%24=&defaultimage=044164CK18_set&hei=65&wid=65",
+      "sampling": "Median RGB from 25×25px central leather region of official product colour thumbnail; UI preview RGB, not measured leather reflectance."
+    }
+  ],
+  "related_products": [
+    "Tarmac H057946CK37",
+    "Ulysse MM H036987CK10",
+    "Calvi Duo H083035CK10"
+  ]
+}
