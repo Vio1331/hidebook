@@ -8,6 +8,7 @@ const $=s=>document.querySelector(s);
 const palette=[{id:'black',name:'黑色',hex:'#363634'},{id:'craie',name:'粉笔白',hex:'#dacdbb'},{id:'gold',name:'金色',hex:'#8c5732'},{id:'caramel',name:'焦糖色',hex:'#ae7238'},{id:'etoupe',name:'大象灰',hex:'#736154'}];
 const foilColors=[{id:'gold',name:'金色',hex:'#e3bd60'},{id:'silver',name:'银色',hex:'#c7ccd1'},{id:'heat',name:'热压',hex:null}];
 const DEFAULT_VIEW_DISTANCE=9;
+const MIN_VIEW_DISTANCE=5.8;
 const threads=palette;
 const parts=[{id:'rear',name:'底皮'},{id:'body',name:'钞位'},{id:'accent',name:'卡位'},{id:'front',name:'下卡位'}];
 const steps=[...parts,{id:'thread',name:'缝线'},{id:'edge',name:'边油'},{id:'crease',name:'边缘装饰线'},{id:'monogram',name:'烫金文字'}];
@@ -152,10 +153,10 @@ function highlightPart(id){
  if(!ready)return;clearPartHighlight();const materials=[],overlay=id==='crease'?new THREE.Group():null;
  if(overlay){
   for(const p of parts){const pts=ringPoints(PART_TOP[p.id],CREASE_INSET).map(q=>new THREE.Vector3(q.x,q.y,surfaceZ(p.id,q.x,q.y,false,state.crease==='single')+.012*MM));
-   overlay.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:'#f3cf99',transparent:true,opacity:0,depthWrite:false,toneMapped:false})))}root.add(overlay);
+   overlay.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:'#ffffff',transparent:true,opacity:0,depthWrite:false,toneMapped:false})))}root.add(overlay);
  }else{
   const material=leatherMaterials[id]||(id==='thread'?threadMaterial:id==='edge'?edgeMaterial:id==='monogram'&&state.monogram?foilMaterial:leatherMaterials.front);
-  material.emissive.set('#f3cf99');materials.push(material);
+  material.emissive.set('#ffffff');materials.push(material);
  }
  partHighlight={id,start:performance.now(),materials,overlay,duration:1100};needsRender=true;
 }
@@ -166,11 +167,11 @@ function resetView(){moveCamera([1.2,.8,6.0],[0,0,0])}
 const views={front:[0,0,5.8],back:[0,0,-5.8],side:[6.2,3.5,2.1]};
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{moveCamera(views[b.dataset.view]);b.setAttribute('aria-pressed','true')});
 function init(){
- const host=$('#scene');scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(32,1,.08,50);renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.98;renderer.shadowMap.enabled=false;renderer.shadowMap.type=THREE.PCFSoftShadowMap;host.appendChild(renderer.domElement);
+ const host=$('#scene');scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(32,1,.08,50);renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));renderer.toneMapping=THREE.LinearToneMapping;renderer.toneMappingExposure=.70;renderer.shadowMap.enabled=false;renderer.shadowMap.type=THREE.PCFSoftShadowMap;host.appendChild(renderer.domElement);
  scene.environment=createStudioEnvironment(renderer);studio=createStudioLighting(scene,camera);
  const key=studio.lights[0];key.castShadow=true;key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=-2.4;key.shadow.camera.right=2.4;key.shadow.camera.top=2;key.shadow.camera.bottom=-2;key.shadow.camera.near=.1;key.shadow.camera.far=16;key.shadow.bias=-.000035;key.shadow.normalBias=.0001;
  root=new THREE.Group();scene.add(root);parts.forEach(p=>makePiece(p.id));sealEdges();makeStitches();root.add(letterGroup);
- controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.09;controls.enablePan=false;controls.minDistance=1.25;controls.maxDistance=DEFAULT_VIEW_DISTANCE;controls.rotateSpeed=.7;controls.zoomSpeed=1.0;
+ controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.09;controls.enablePan=false;controls.minDistance=MIN_VIEW_DISTANCE;controls.maxDistance=DEFAULT_VIEW_DISTANCE;controls.rotateSpeed=.7;controls.zoomSpeed=1.0;
  controls.addEventListener('change',()=>{needsRender=true});
  controls.addEventListener('start',()=>{cameraMotion=null;document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed','false'))});
  ready=true;applyMaterials();camera.position.set(1.2,.8,6).normalize().multiplyScalar(DEFAULT_VIEW_DISTANCE);controls.update();
@@ -178,7 +179,7 @@ function init(){
  const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();let down;
  renderer.domElement.addEventListener('pointerdown',e=>down={x:e.clientX,y:e.clientY,time:performance.now()});
  renderer.domElement.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down.x,e.clientY-down.y)>5||performance.now()-down.time>500)return;const r=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-r.left)/r.width*2-1,1-(e.clientY-r.top)/r.height*2);raycaster.setFromCamera(pointer,camera);const hit=raycaster.intersectObjects(Object.values(meshes),true)[0];if(hit){const part=hit.object.parent.name;selectStep(parts.findIndex(p=>p.id===part))}});
- host.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','+','-','='].includes(e.key))return;e.preventDefault();cameraMotion=null;const s=new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));if(e.key==='ArrowLeft')s.theta-=.12;if(e.key==='ArrowRight')s.theta+=.12;if(e.key==='ArrowUp')s.phi-=.12;if(e.key==='ArrowDown')s.phi+=.12;if(['+','='].includes(e.key))s.radius-=.3;if(e.key==='-')s.radius+=.3;s.phi=Math.max(.05,Math.min(Math.PI-.05,s.phi));s.radius=Math.max(1.25,Math.min(DEFAULT_VIEW_DISTANCE,s.radius));camera.position.copy(new THREE.Vector3().setFromSpherical(s).add(controls.target));controls.update()});
+ host.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','+','-','='].includes(e.key))return;e.preventDefault();cameraMotion=null;const s=new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));if(e.key==='ArrowLeft')s.theta-=.12;if(e.key==='ArrowRight')s.theta+=.12;if(e.key==='ArrowUp')s.phi-=.12;if(e.key==='ArrowDown')s.phi+=.12;if(['+','='].includes(e.key))s.radius-=.3;if(e.key==='-')s.radius+=.3;s.phi=Math.max(.05,Math.min(Math.PI-.05,s.phi));s.radius=Math.max(MIN_VIEW_DISTANCE,Math.min(DEFAULT_VIEW_DISTANCE,s.radius));camera.position.copy(new THREE.Vector3().setFromSpherical(s).add(controls.target));controls.update()});
  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();$('#loading').textContent='预览已中断，请刷新';$('#loading').hidden=false});$('#loading').hidden=true;
  function frame(){let changed=!!cameraMotion;if(cameraMotion){const a=cameraMotion,t=a.duration?Math.min(1,(performance.now()-a.start)/a.duration):1,u=t*t*(3-2*t);camera.position.setFromSpherical(new THREE.Spherical(a.radius,THREE.MathUtils.lerp(a.phi,a.toPhi,u),a.theta+a.deltaTheta*u)).add(a.center);controls.target.copy(a.center);if(t===1)cameraMotion=null}if(partHighlight){changed=true;const a=partHighlight,t=Math.min(1,(performance.now()-a.start)/a.duration),pulse=Math.cos(Math.PI*.5*t);for(const m of a.materials)m.emissiveIntensity=.20*pulse;if(a.overlay)for(const line of a.overlay.children)line.material.opacity=.85*pulse;if(t===1)clearPartHighlight()}changed=controls.update()||changed;if(changed||needsRender){studio.update();renderer.render(scene,camera);needsRender=false}}renderer.setAnimationLoop(frame);document.addEventListener('visibilitychange',()=>renderer.setAnimationLoop(document.hidden?null:frame));
  // A read-only diagnostics surface supports model QA without reaching into WebGL.
