@@ -4,7 +4,7 @@ import {MM,LAYER,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,ATLAS_MM,CREASE_INSET,STIT
 import {loadPhotoMaterials,leatherSpecs} from './photo-materials.js?v=20261002h';
 import {seamCurves,linenGeometry,edgePaintGeometry,LINEN_PLIES} from './leather-details.js?v=20261002j';
 import {createStudioLighting,createStudioEnvironment} from './studio-lighting.js?v=20261002i';
-import {createCustomizationSheet} from './customization-sheet.js?v=20261002j';
+import {createCustomizationSheet} from './customization-sheet.js?v=20261002k';
 const $=s=>document.querySelector(s);
 const palette=[{id:'black',name:'黑色',hex:'#363634'},{id:'craie',name:'粉笔白',hex:'#dacdbb'},{id:'gold',name:'金色',hex:'#8c5732'},{id:'caramel',name:'焦糖色',hex:'#ae7238'},{id:'etoupe',name:'大象灰',hex:'#736154'}];
 const foilColors=[{id:'gold',name:'金色',hex:'#e3bd60'},{id:'silver',name:'银色',hex:'#c7ccd1'},{id:'heat',name:'热压',hex:null}];
@@ -53,8 +53,8 @@ $('#reset-all').onclick=()=>{state={...initial};applyMaterials();for(const m of 
 function orderRows(config=state){
  const hasText=!!config.monogram,baseCents=24900,stampCents=hasText?5000:0,money=cents=>'¥'+(cents/100).toFixed(2);
  const rows=[{label:'基础价格',value:'',amount:money(baseCents)}];
- rows.push(...parts.map(p=>({label:p.name,value:`${color(config[p.id]).name}·${spec(config[p.id+'Material']).name}`,hex:color(config[p.id]).hex})));
- rows.push({label:'缝线',value:color(config.thread).name,hex:color(config.thread).hex},{label:'边油',value:color(config.edge).name,hex:color(config.edge).hex},{label:'边缘装饰线',value:config.crease==='none'?'无':'有',hex:null},{label:'烫金文字',value:hasText?`${color(config.foil,foilColors).name}·${config.monogram}`:'无',hex:hasText?(config.foil==='heat'?'#'+new THREE.Color(color(config.front).hex).multiplyScalar(.5).getHexString():color(config.foil,foilColors).hex):null,amount:hasText?'+'+money(stampCents):null},{label:'总价',value:'',amount:money(baseCents+stampCents),total:true});return rows;
+ rows.push(...parts.map(p=>({label:p.name,value:`${color(config[p.id]).name} · ${spec(config[p.id+'Material']).name}`,hex:color(config[p.id]).hex})));
+ rows.push({label:'缝线',value:color(config.thread).name,hex:color(config.thread).hex},{label:'边油',value:color(config.edge).name,hex:color(config.edge).hex},{label:'边缘装饰线',value:config.crease==='none'?'无':'有',hex:null},{label:'烫金文字',value:hasText?`${color(config.foil,foilColors).name} · ${config.monogram}`:'无',hex:hasText?(config.foil==='heat'?'#'+new THREE.Color(color(config.front).hex).multiplyScalar(.5).getHexString():color(config.foil,foilColors).hex):null,amount:hasText?'+'+money(stampCents):null},{label:'总价',value:'',amount:money(baseCents+stampCents),total:true});return rows;
 }
 function captureOrderViews(){
  clearPartHighlight();const size=renderer.getSize(new THREE.Vector2()),pixelRatio=renderer.getPixelRatio(),view=new THREE.PerspectiveCamera(32,4/3,.08,50),images=[];

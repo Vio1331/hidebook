@@ -24,7 +24,7 @@ export async function createCustomizationSheet({front,back,rows}){
   ctx.fillStyle=INK;ctx.font='400 32px Manrope, "Hidebook Order Sans", sans-serif';
   if(ctx.measureText(row.value).width>(row.amount?400:570))ctx.font='400 29px Manrope, "Hidebook Order Sans", sans-serif';
   ctx.fillText(row.value,318,y+40);
-  if(row.amount){ctx.font=`${row.total?'600 36':'400 32'}px Manrope, "Hidebook Order Sans", sans-serif`;ctx.textAlign='right';ctx.fillText(row.amount,890,y+40);ctx.textAlign='left'}
+  if(row.amount){ctx.font=`${row.total?'600 36':'400 26'}px Manrope, "Hidebook Order Sans", sans-serif`;ctx.textAlign='right';ctx.fillText(row.amount,890,y+40);ctx.textAlign='left'}
  });
  return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('图片生成失败')),'image/png'));
 }
