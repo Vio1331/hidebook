@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {MM,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,LAYER,CREASE_INSET,CREASE_WIDTH,THREAD_DIAMETER,STITCH_PITCH,makeLeatherSurface,foldedTopGeometry,surfaceZ,openingOffset,setPressedGeometry,stitchSegments,slotTop} from '../dist/leather-geometry.js';
 const near=(a,b,e=1e-6)=>assert.ok(Math.abs(a-b)<e,`${a} != ${b}`);
 near(HALF*2/MM,107);near((BODY_TOP-BOTTOM)/MM,75);near(LAYER/MM,1);near(CREASE_INSET/MM,2);near(CREASE_WIDTH/MM,.28);near(THREAD_DIAMETER/MM,.45);
-near((BODY_TOP-PART_TOP.accent)/MM,10.5);near((PART_TOP.accent-PART_TOP.front)/MM,10.5);
+near((BODY_TOP-PART_TOP.accent)/MM,11);near((PART_TOP.accent-PART_TOP.front)/MM,11);
 for(const p of ['rear','body','accent','front']){
  const g=makeLeatherSurface(p);for(const a of g.attributes.position.array)assert.ok(Number.isFinite(a));
  const original=g.attributes.position.array.slice();setPressedGeometry(g,true);assert.ok(original.some((a,i)=>a!==g.attributes.position.array[i]));setPressedGeometry(g,false);for(let i=0;i<original.length;i++)near(original[i],g.attributes.position.array[i]);

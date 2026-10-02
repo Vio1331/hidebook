@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {MM,HALF,BOTTOM,BODY_TOP,BOTTOM_RADIUS,PART_TOP,PART_Z,STITCH_INSET,THREAD_DIAMETER,seamPath,stitchSegments,surfaceZ,slotTop,openingOffset} from './leather-geometry.js?v=20261002m';
+import {MM,HALF,BOTTOM,BODY_TOP,BOTTOM_RADIUS,PART_TOP,PART_Z,STITCH_INSET,THREAD_DIAMETER,seamPath,stitchSegments,surfaceZ,slotTop,openingOffset} from './leather-geometry.js?v=20261002n';
 export const LINEN_PLIES=3,LINEN_TWIST_MM=2.6;
 export function stitchZ(x,y,back){
  if(back)return surfaceZ('rear',x,y,true,false)-.045*MM;
