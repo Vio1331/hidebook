@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import {OrbitControls} from './vendor/OrbitControls.js';
-import {MM,LAYER,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,ATLAS_MM,CREASE_INSET,STITCH_INSET,THREAD_DIAMETER,slotTop,makeLeatherSurface,setPressedGeometry,foldedTopGeometry,seamPath,stitchSegments,ringPoints,surfaceZ,seamSurfaceZ} from './leather-geometry.js?v=20261002j';
+import {MM,LAYER,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,ATLAS_MM,CREASE_INSET,STITCH_INSET,THREAD_DIAMETER,slotTop,makeLeatherSurface,setPressedGeometry,foldedTopGeometry,seamPath,stitchSegments,ringPoints,surfaceZ,seamSurfaceZ} from './leather-geometry.js?v=20261002m';
 import {loadPhotoMaterials,leatherSpecs} from './photo-materials.js?v=20261002h';
-import {seamCurves,linenGeometry,edgePaintGeometry,LINEN_PLIES} from './leather-details.js?v=20261002j';
+import {seamCurves,linenGeometry,edgePaintGeometry,LINEN_PLIES} from './leather-details.js?v=20261002m';
 import {createStudioLighting,createStudioEnvironment} from './studio-lighting.js?v=20261002i';
 import {createCustomizationSheet} from './customization-sheet.js?v=20261002k';
 const $=s=>document.querySelector(s);

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {MM,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,LAYER,CREASE_INSET,CREASE_WIDTH,THREAD_DIAMETER,STITCH_PITCH,makeLeatherSurface,foldedTopGeometry,surfaceZ,openingOffset,setPressedGeometry,stitchSegments,slotTop} from '../dist/leather-geometry.js';
 const near=(a,b,e=1e-6)=>assert.ok(Math.abs(a-b)<e,`${a} != ${b}`);
-near(HALF*2/MM,107);near((BODY_TOP-BOTTOM)/MM,70);near(LAYER/MM,1);near(CREASE_INSET/MM,2);near(CREASE_WIDTH/MM,.28);near(THREAD_DIAMETER/MM,.45);
+near(HALF*2/MM,107);near((BODY_TOP-BOTTOM)/MM,75);near(LAYER/MM,1);near(CREASE_INSET/MM,2);near(CREASE_WIDTH/MM,.28);near(THREAD_DIAMETER/MM,.45);
 near((BODY_TOP-PART_TOP.accent)/MM,10.5);near((PART_TOP.accent-PART_TOP.front)/MM,10.5);
 for(const p of ['rear','body','accent','front']){
  const g=makeLeatherSurface(p);for(const a of g.attributes.position.array)assert.ok(Number.isFinite(a));
@@ -25,7 +25,7 @@ for(let y=BOTTOM+4*MM;y<BODY_TOP-.6*MM;y+=.7*MM)for(let x=-HALF+4*MM;x<HALF-4*MM
  for(let i=1;i<visible.length;i++){const back=surfaceZ(visible[i],x,y,true,false),previous=surfaceZ(visible[i-1],x,y,false,false);assert.ok(back>=previous-1e-7,`${visible[i]} intersects ${visible[i-1]}`)}gaps++;
 }
 assert.ok(openingOffset('body',0,BODY_TOP)/MM>1.8);near(openingOffset('body',HALF-3*MM,BODY_TOP),0);
-const seam=stitchSegments();assert.equal(seam.count,68);assert.equal(seam.segments.filter(s=>s.backstitch).length,2);assert.ok(Math.abs(seam.pitchMM-STITCH_PITCH/MM)<.03);
+const seam=stitchSegments();assert.equal(seam.count,70);assert.equal(seam.segments.filter(s=>s.backstitch).length,2);assert.ok(Math.abs(seam.pitchMM-STITCH_PITCH/MM)<.03);
 assert.ok(seam.segments[2].b.x<seam.segments[2].a.x,'Left seam must rise to the right');
 console.log(`PASS: four separate solids; ${gaps} nonintersection samples; folded R0.5mm lips; real crease; ${seam.count} continuous stitches, ${seam.pitchMM.toFixed(3)}mm pitch, one continuous top wrap plus one lower return per corner.`);
 
@@ -61,4 +61,5 @@ const coat=edgePaintGeometry(),parent=Array.from({length:coat.attributes.positio
 for(let i=0;i<coat.index.array.length;i+=3){const [a,b,c]=coat.index.array.slice(i,i+3);parent[find(a)]=find(b);parent[find(b)]=find(c)}
 assert.equal(new Set(parent.map((_,i)=>find(i))).size,1,'Edge paint must be one connected coat');
 for(const a of coat.attributes.normal.array)assert.ok(Number.isFinite(a));
+coat.computeBoundingBox();near(coat.boundingBox.min.y/MM,BOTTOM/MM-.055,.00002);near(coat.boundingBox.max.y/MM,BODY_TOP/MM+.025,.00002);
 console.log(`PASS: ${wraps.length} continuous wrap strands; straight parallel lower returns; thread above crease; one connected edge coat (${coat.attributes.position.count} vertices).`);

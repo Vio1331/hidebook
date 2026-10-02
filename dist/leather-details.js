@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {MM,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,STITCH_INSET,THREAD_DIAMETER,seamPath,stitchSegments,surfaceZ,slotTop,openingOffset} from './leather-geometry.js?v=20261002j';
+import {MM,HALF,BOTTOM,BODY_TOP,BOTTOM_RADIUS,PART_TOP,PART_Z,STITCH_INSET,THREAD_DIAMETER,seamPath,stitchSegments,surfaceZ,slotTop,openingOffset} from './leather-geometry.js?v=20261002m';
 export const LINEN_PLIES=3,LINEN_TWIST_MM=2.6;
 export function stitchZ(x,y,back){
  if(back)return surfaceZ('rear',x,y,true,false)-.045*MM;
@@ -80,17 +80,17 @@ export function linenGeometry(points){
 // A single continuous edge coat spans the glued stack. There are no per-layer
 // ridges. Only the outside silhouette steps at the pocket mouths.
 export function edgePaintGeometry(){
- const p=[],ind=[],cross=20,rows=[],frontTop=PART_TOP.front/MM,accentTop=PART_TOP.accent/MM;
- for(let y=-25;y<34.5;y+=.5)rows.push({y});
+ const p=[],ind=[],cross=20,rows=[],frontTop=PART_TOP.front/MM,accentTop=PART_TOP.accent/MM,bottomJoin=(BOTTOM+BOTTOM_RADIUS)/MM,topFold=BODY_TOP/MM-.5;
+ for(let y=bottomJoin;y<topFold;y+=.5)rows.push({y});
  for(const top of [frontTop,accentTop]){
   for(let j=0;j<=16;j++)rows.push({y:top-.5+.525*j/16,cap:top});
   rows.push({y:top+.025,above:true,cap:top});
  }
- for(let j=0;j<=20;j++)rows.push({y:34.5+.525*j/20});
+ for(let j=0;j<=20;j++)rows.push({y:topFold+.525*j/20});
  rows.sort((a,b)=>a.y-b.y||Number(!!a.above)-Number(!!b.above));
  function limits(row){
   const y=row.y;
-  if(y>=34.5){const r=Math.sqrt(Math.max(0,.525**2-(y-34.5)**2));return [-1.5-r,-.5+r]}
+  if(y>=topFold){const r=Math.sqrt(Math.max(0,.525**2-(y-topFold)**2));return [-1.5-r,-.5+r]}
   let front=y<frontTop+.025?2.025:y<accentTop+.025?1.025:.025;
   if(row.above)front=row.cap===frontTop?1.025:.025;
   else for(const [top,z] of [[frontTop,1.5],[accentTop,.5]])if(y>=top-.5&&y<=top+.025){front=z+Math.sqrt(Math.max(0,.525**2-(y-top+.5)**2));break}
@@ -108,9 +108,9 @@ export function edgePaintGeometry(){
   const last=start+(rows.length-1)*(cross+1),rim=p.length/3;
   for(let j=0;j<=cross;j++){const q=(last+j)*3;p.push(side*(HALF-.10*MM),p[q+1],p[q+2]);if(j<cross)side>0?ind.push(last+j,rim+j,last+j+1,last+j+1,rim+j,rim+j+1):ind.push(last+j,last+j+1,rim+j,last+j+1,rim+j+1,rim+j)}
  }
- const path=seamPath(-25*MM,0),n=320,start=p.length/3;
+ const path=seamPath(bottomJoin*MM,0),n=320,start=p.length/3;
  for(let i=0;i<=n;i++){
-  const q=path.getPointAt(i/n),t=path.getTangentAt(i/n),out=new THREE.Vector2(t.y,-t.x);if(i===0){q.set(-HALF,-25*MM);out.set(-1,0)}if(i===n){q.set(HALF,-25*MM);out.set(1,0)}
+  const q=path.getPointAt(i/n),t=path.getTangentAt(i/n),out=new THREE.Vector2(t.y,-t.x);if(i===0){q.set(-HALF,bottomJoin*MM);out.set(-1,0)}if(i===n){q.set(HALF,bottomJoin*MM);out.set(1,0)}
   for(let j=0;j<=cross;j++){const u=j/cross,offset=(.055-.13*Math.exp(-((4.05*Math.min(u,1-u)/.10)**2)))*MM;p.push(q.x+out.x*offset,q.y+out.y*offset,(-2.025+4.05*u)*MM);
    if(i<n&&j<cross){const k=start+i*(cross+1)+j;ind.push(k,k+cross+1,k+1,k+1,k+cross+1,k+cross+2)}
   }
