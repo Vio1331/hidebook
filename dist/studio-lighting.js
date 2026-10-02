@@ -35,5 +35,5 @@ export function createStudioLighting(scene,camera){
   scene.add(light);return light;
  });
  const local=new THREE.Vector3();
- return {lights,update(){camera.updateMatrixWorld();lights.forEach((light,i)=>light.position.copy(local.fromArray(studioLights[i].position).applyQuaternion(camera.quaternion)).add(target.position));scene.environmentRotation.setFromQuaternion(camera.quaternion)}};
+ return {lights,update(viewCamera=camera){viewCamera.updateMatrixWorld();lights.forEach((light,i)=>light.position.copy(local.fromArray(studioLights[i].position).applyQuaternion(viewCamera.quaternion)).add(target.position));scene.environmentRotation.setFromQuaternion(viewCamera.quaternion)}};
 }

@@ -1,11 +1,36 @@
 import * as THREE from './vendor/three.module.js';
-import {MM,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,STITCH_INSET,THREAD_DIAMETER,seamPath,stitchSegments,surfaceZ,slotTop} from './leather-geometry.js?v=20261002c';
+import {MM,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,STITCH_INSET,THREAD_DIAMETER,seamPath,stitchSegments,surfaceZ,slotTop,openingOffset} from './leather-geometry.js?v=20261002d';
 export const LINEN_PLIES=3,LINEN_TWIST_MM=2.6;
 export function stitchZ(x,y,back){
  if(back)return surfaceZ('rear',x,y,true,false)-.045*MM;
  let z=surfaceZ('body',x,y,false,false);
- for(const part of ['accent','front']){const top=slotTop(x,PART_TOP[part]),u=THREE.MathUtils.smoothstep(top+.45*MM-y,0,1.05*MM);z=THREE.MathUtils.lerp(z,surfaceZ(part,x,y,false,false),u)}
+ for(const part of ['accent','front']){
+  const top=slotTop(x,PART_TOP[part]),yc=top-.5*MM;
+  if(y<=yc)z=surfaceZ(part,x,y,false,false);
+  else if(y<=top)z=Math.max(z,PART_Z[part]+.5*MM+openingOffset(part,x,yc)+Math.sqrt(Math.max(0,(.5*MM)**2-(y-yc)**2)));
+ }
  return z+.045*MM;
+}
+// The tensioned thread follows the convex envelope of each folded lip.
+// Its free spans are straight tangents, not an S-shaped interpolation of layers.
+function bridgePoints(a,b,part){
+ const low=Math.min(a.y,b.y),high=Math.max(a.y,b.y),dy=b.y-a.y,xAt=y=>THREE.MathUtils.lerp(a.x,b.x,(y-a.y)/dy),top=PART_TOP[part],yc=top-.5*MM,r=.545*MM;
+ const candidates=[{y:a.y,z:stitchZ(a.x,a.y,false)},{y:b.y,z:stitchZ(b.x,b.y,false)}];
+ for(let i=0;i<=64;i++){
+  const angle=i/64*Math.PI/2,y=yc+r*Math.sin(angle);if(y<=low||y>=high)continue;
+  const x=xAt(y),z=PART_Z[part]+.5*MM+openingOffset(part,x,yc)+r*Math.cos(angle);candidates.push({y,z});
+ }
+ candidates.sort((p,q)=>p.y-q.y||q.z-p.z);const hull=[];
+ for(const p of candidates){
+  if(hull.length&&Math.abs(p.y-hull.at(-1).y)<1e-10)continue;
+  while(hull.length>1){const u=hull.at(-2),v=hull.at(-1),cross=(v.y-u.y)*(p.z-v.z)-(v.z-u.z)*(p.y-v.y);if(cross<0)break;hull.pop()}
+  hull.push(p);
+ }
+ const points=[];
+ for(let j=0;j<=64;j++){
+  const t=j/64,y=THREE.MathUtils.lerp(a.y,b.y,t),x=THREE.MathUtils.lerp(a.x,b.x,t);let k=1;while(k<hull.length-1&&hull[k].y<y)k++;
+  const u=hull[k-1],v=hull[k],z=THREE.MathUtils.lerp(u.z,v.z,(y-u.y)/(v.y-u.y));points.push(new THREE.Vector3(x,y,z));
+ }return points;
 }
 export function seamCurves(){
  const {segments,holes,count,pitchMM}=stitchSegments(),curves=[],pairGap=.42*MM;
@@ -13,9 +38,12 @@ export function seamCurves(){
   if(i===0||i===count-1)continue; // Replaced by one continuous front/top/back stitch.
   const s=segments[i],dir=s.b.clone().sub(s.a).normalize(),normal=new THREE.Vector2(-dir.y,dir.x),paired=i===1||i===count-2;
   for(const strand of paired?[-.5,.5]:[0]){
-   const pts=[];for(let j=0;j<=12;j++){const t=j/12,x=THREE.MathUtils.lerp(s.a.x,s.b.x,t)+normal.x*pairGap*strand,y=THREE.MathUtils.lerp(s.a.y,s.b.y,t)+normal.y*pairGap*strand;
-    const lift=Math.sin(Math.PI*t)*.025*MM;pts.push(new THREE.Vector3(x,y,stitchZ(x,y,back)+(back?-lift:lift)))}
-   curves.push({points:pts,kind:paired?'parallel-return':'regular',side:back?'back':'front',index:i,strand});
+   const a=s.a.clone().addScaledVector(normal,pairGap*strand),b=s.b.clone().addScaledVector(normal,pairGap*strand),fold=!back&&['accent','front'].find(part=>Math.min(a.y,b.y)<PART_TOP[part]&&Math.max(a.y,b.y)>PART_TOP[part]-.5*MM);
+   const pts=fold?bridgePoints(a,b,fold):[];
+   if(!fold)for(let j=0;j<=12;j++){const t=j/12,x=THREE.MathUtils.lerp(a.x,b.x,t),y=THREE.MathUtils.lerp(a.y,b.y,t),lift=Math.sin(Math.PI*t)*.018*MM;pts.push(new THREE.Vector3(x,y,stitchZ(x,y,back)+(back?-lift:lift)))}
+   // Thin ends enter the awl hole instead of ending as visible raised stubs.
+   pts.forEach((p,j)=>{const t=j/(pts.length-1),bury=.12*MM*Math.exp(-((Math.min(t,1-t)/.045)**2));p.z+=back?bury:-bury});
+   curves.push({points:pts,kind:paired?'parallel-return':fold?'fold-bridge':'regular',fold:fold||null,side:back?'back':'front',index:i,strand});
   }
  }
  for(const side of [-1,1]){

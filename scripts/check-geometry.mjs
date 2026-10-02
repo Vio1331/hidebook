@@ -28,8 +28,20 @@ const seam=stitchSegments();assert.equal(seam.count,68);assert.equal(seam.segmen
 assert.ok(seam.segments[2].b.x<seam.segments[2].a.x,'Left seam must rise to the right');
 console.log(`PASS: four separate solids; ${gaps} nonintersection samples; folded R0.5mm lips; real crease; ${seam.count} continuous stitches, ${seam.pitchMM.toFixed(3)}mm pitch, one continuous top wrap plus one lower return per corner.`);
 
-const {seamCurves,linenGeometry,edgePaintGeometry}=await import('../dist/leather-details.js');
+const {seamCurves,linenGeometry,edgePaintGeometry,stitchZ}=await import('../dist/leather-details.js');
 const detail=seamCurves(),wraps=detail.curves.filter(c=>c.kind==='continuous-top-return');
+const bridges=detail.curves.filter(c=>c.kind==='fold-bridge');
+assert.equal(bridges.length,4,'Both sides must have one taut bridge at each pocket mouth');
+for(const c of bridges){
+ assert.equal(c.points.length,65);
+ for(let i=1;i<c.points.length-1;i++){
+  const t=i/(c.points.length-1),p=c.points[i],a=c.points[0],b=c.points.at(-1);
+  near(p.x,a.x+(b.x-a.x)*t);near(p.y,a.y+(b.y-a.y)*t);
+  if(t>.08&&t<.92)assert.ok(p.z>=stitchZ(p.x,p.y,false)-.025*MM,'Bridge crosses folded leather');
+  if(i>1){const u=p.clone().sub(c.points[i-1]),v=c.points[i-1].clone().sub(c.points[i-2]);assert.ok(u.dot(v)>0,'Bridge doubles back')}
+ }
+ const g=linenGeometry(c.points);for(const v of g.attributes.normal.array)assert.ok(Number.isFinite(v));g.dispose();
+}
 assert.equal(wraps.length,4,'Two parallel strands wrap each top corner');
 for(const c of wraps){
  assert.ok(c.points[0].z>-.1*MM&&c.points.at(-1).z<-1.9*MM,'Wrap must join front and rear');
@@ -43,7 +55,7 @@ for(const side of ['front','back'])for(const index of [1,detail.count-2]){
  const delta=pair[0].points[0].clone().sub(pair[1].points[0]);for(let i=0;i<pair[0].points.length;i++){const d=pair[0].points[i].clone().sub(pair[1].points[i]);near(d.x,delta.x);near(d.y,delta.y)}
 }
 // Creases lie in leather only: the thread height uses the unpressed surface.
-const {stitchZ}=await import('../dist/leather-details.js');near(stitchZ(HALF-3*MM,BODY_TOP-2*MM,false),surfaceZ('body',HALF-3*MM,BODY_TOP-2*MM,false,false)+.045*MM);
+near(stitchZ(HALF-3*MM,BODY_TOP-2*MM,false),surfaceZ('body',HALF-3*MM,BODY_TOP-2*MM,false,false)+.045*MM);
 const coat=edgePaintGeometry(),parent=Array.from({length:coat.attributes.position.count},(_,i)=>i),find=i=>parent[i]===i?i:parent[i]=find(parent[i]);
 for(let i=0;i<coat.index.array.length;i+=3){const [a,b,c]=coat.index.array.slice(i,i+3);parent[find(a)]=find(b);parent[find(b)]=find(c)}
 assert.equal(new Set(parent.map((_,i)=>find(i))).size,1,'Edge paint must be one connected coat');

@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hidebook · 卡包定制</title><meta name="description" content="选择皮料、颜色与缝线，定制你的手工卡包。"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23282420'/%3E%3Cpath d='M9 8v16m14-16v16M9 16h14' fill='none' stroke='%23f7f3eb' stroke-width='2'/%3E%3C/svg%3E"><link rel="stylesheet" href="./style.css?v=20261002f"><script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script></head>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hidebook · 卡包定制</title><meta name="description" content="选择皮料、颜色与缝线，定制你的手工卡包。"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23282420'/%3E%3Cpath d='M9 8v16m14-16v16M9 16h14' fill='none' stroke='%23f7f3eb' stroke-width='2'/%3E%3C/svg%3E"><link rel="stylesheet" href="./style.css?v=20261002i"><script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script></head>
 <body>
-<header class="topbar"><a class="brand" href="./" aria-label="Hidebook 首页">hidebook</a><h1>卡包</h1><div class="header-actions"><button id="reset-all">重置</button><button id="save-design">保存设计</button></div></header>
+<header class="topbar"><a class="brand" href="./" aria-label="Hidebook 首页">hidebook</a><h1>卡包</h1><div class="header-actions"><button id="reset-all">重置</button><button id="save-design" disabled>生成定制单</button></div></header>
 <main>
- <section class="viewer" aria-label="卡包预览"><div id="scene" tabindex="0" aria-label="拖动旋转卡包，滚轮缩放"><div id="loading" role="status">正在加载</div></div><div class="viewer-tools"><button data-view="front" aria-label="正面">正面</button><button data-view="back" aria-label="背面">背面</button><button data-view="side" aria-label="侧面">侧面</button></div></section>
+ <section class="viewer" aria-label="卡包预览"><p class="render-note">*渲染结果与实际观感可能存在细微差异，最终效果以实物为准。</p><div id="scene" tabindex="0" aria-label="拖动旋转卡包，滚轮缩放"><div id="loading" role="status">正在加载</div></div><div class="viewer-tools"><button data-view="front" aria-label="正面">正面</button><button data-view="back" aria-label="背面">背面</button><button data-view="side" aria-label="侧面">侧面</button></div></section>
  <section class="customizer" aria-label="定制选项">
   <div class="step-bar"><button class="menu-toggle" id="menu-toggle" aria-expanded="false" aria-controls="part-menu"><span class="menu-icon"><i></i><i></i></span>菜单</button><div class="step-navigation"><button id="prev-part" aria-label="上一部位">‹</button><h2 id="part-title">底皮</h2><button id="next-part" aria-label="下一部位">›</button></div></div>
   <nav id="part-menu" hidden aria-label="定制部位"></nav>
@@ -11,6 +11,6 @@
  </section>
 </main>
 <dialog id="material-dialog" aria-labelledby="material-dialog-title"><button class="close-dialog" aria-label="关闭皮料信息">×</button><div id="material-dialog-content"></div></dialog>
-<dialog id="design-dialog" aria-labelledby="design-title"><button class="close-dialog" aria-label="关闭设计">×</button><h2 id="design-title">你的设计</h2><div id="design-summary"></div><button class="solid-button" id="download-design">下载设计</button></dialog>
+<dialog id="design-dialog" aria-labelledby="design-title"><button class="close-dialog" aria-label="关闭定制单">×</button><h2 id="design-title" class="sr-only">定制单</h2><p id="order-status" role="status">正在生成</p><img id="order-image" alt="定制单" hidden><div class="order-actions"><button class="solid-button" id="download-design" disabled>保存图片</button></div></dialog>
 <div class="toast" id="toast" role="status" hidden></div>
-<script type="module" src="./app.js?v=20261002h"></script></body></html>
+<script type="module" src="./app.js?v=20261002i"></script></body></html>
