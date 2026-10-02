@@ -9,21 +9,22 @@ function drawModel(ctx,image,x,y,w,h){
  const sw=right-left+1,sh=bottom-top+1,scale=Math.min(w/sw,h/sh);ctx.drawImage(image,left,top,sw,sh,x+(w-sw*scale)/2,y+(h-sh*scale)/2,sw*scale,sh*scale);
 }
 export async function createCustomizationSheet({front,back,rows}){
- const text=rows.map(r=>r.label+r.value).join('')+RENDER_NOTE+'定制单正面背面';
+ const text=rows.map(r=>r.label+r.value+(r.amount||'')).join('')+RENDER_NOTE+'定制单正面背面';
  const [frontImage,backImage]=await Promise.all([imageFrom(front),imageFrom(back),document.fonts.load('600 56px Manrope','hidebook'),document.fonts.load('400 32px "Hidebook Order Sans"',text)]);
  const canvas=document.createElement('canvas');canvas.width=960;canvas.height=1440;const ctx=canvas.getContext('2d');
  ctx.fillStyle=PAPER;ctx.fillRect(0,0,960,1440);ctx.fillStyle=INK;ctx.font='600 56px Manrope, sans-serif';ctx.fillText('hidebook',70,108);
  ctx.font='400 32px "Hidebook Order Sans", sans-serif';ctx.textAlign='right';ctx.fillText('定制单',890,105);ctx.textAlign='left';
  const rule=y=>{ctx.strokeStyle=LINE;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(70,y);ctx.lineTo(890,y);ctx.stroke()};rule(153);
- drawModel(ctx,frontImage,62,192,400,304);drawModel(ctx,backImage,498,192,400,304);
+ ctx.fillStyle=MUTED;ctx.font='400 18px "Hidebook Order Sans", sans-serif';ctx.fillText(RENDER_NOTE,70,185);
+ drawModel(ctx,frontImage,62,212,400,280);drawModel(ctx,backImage,498,212,400,280);
  ctx.fillStyle=MUTED;ctx.font='400 26px "Hidebook Order Sans", sans-serif';ctx.textAlign='center';ctx.fillText('正面',262,546);ctx.fillText('背面',698,546);ctx.textAlign='left';
  rows.forEach((row,i)=>{
-  const y=598+i*86;rule(y+74);ctx.fillStyle=MUTED;ctx.font='400 30px "Hidebook Order Sans", sans-serif';ctx.fillText(row.label,70,y+40);
+  const y=568+i*76;rule(y+66);ctx.fillStyle=row.total?INK:MUTED;ctx.font='400 30px "Hidebook Order Sans", sans-serif';ctx.fillText(row.label,70,y+40);
   if(row.hex){ctx.fillStyle=row.hex;ctx.beginPath();ctx.arc(282,y+29,13,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#00000020';ctx.stroke()}
   ctx.fillStyle=INK;ctx.font='400 32px Manrope, "Hidebook Order Sans", sans-serif';
-  if(ctx.measureText(row.value).width>570)ctx.font='400 29px Manrope, "Hidebook Order Sans", sans-serif';
+  if(ctx.measureText(row.value).width>(row.amount?400:570))ctx.font='400 29px Manrope, "Hidebook Order Sans", sans-serif';
   ctx.fillText(row.value,318,y+40);
+  if(row.amount){ctx.font=`${row.total?'600 36':'400 32'}px Manrope, "Hidebook Order Sans", sans-serif`;ctx.textAlign='right';ctx.fillText(row.amount,890,y+40);ctx.textAlign='left'}
  });
- ctx.fillStyle=MUTED;ctx.font='400 22px "Hidebook Order Sans", sans-serif';ctx.fillText(RENDER_NOTE,70,1374);
  return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('图片生成失败')),'image/png'));
 }

@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import {OrbitControls} from './vendor/OrbitControls.js';
-import {MM,LAYER,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,ATLAS_MM,CREASE_INSET,STITCH_INSET,THREAD_DIAMETER,slotTop,makeLeatherSurface,setPressedGeometry,foldedTopGeometry,seamPath,stitchSegments,ringPoints,surfaceZ,seamSurfaceZ} from './leather-geometry.js?v=20261002d';
+import {MM,LAYER,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,ATLAS_MM,CREASE_INSET,STITCH_INSET,THREAD_DIAMETER,slotTop,makeLeatherSurface,setPressedGeometry,foldedTopGeometry,seamPath,stitchSegments,ringPoints,surfaceZ,seamSurfaceZ} from './leather-geometry.js?v=20261002j';
 import {loadPhotoMaterials,leatherSpecs} from './photo-materials.js?v=20261002h';
-import {seamCurves,linenGeometry,edgePaintGeometry,LINEN_PLIES} from './leather-details.js?v=20261002i';
+import {seamCurves,linenGeometry,edgePaintGeometry,LINEN_PLIES} from './leather-details.js?v=20261002j';
 import {createStudioLighting,createStudioEnvironment} from './studio-lighting.js?v=20261002i';
-import {createCustomizationSheet} from './customization-sheet.js?v=20261002i';
+import {createCustomizationSheet} from './customization-sheet.js?v=20261002j';
 const $=s=>document.querySelector(s);
 const palette=[{id:'black',name:'黑色',hex:'#363634'},{id:'craie',name:'粉笔白',hex:'#dacdbb'},{id:'gold',name:'金色',hex:'#8c5732'},{id:'caramel',name:'焦糖色',hex:'#ae7238'},{id:'etoupe',name:'大象灰',hex:'#736154'}];
 const foilColors=[{id:'gold',name:'金色',hex:'#e3bd60'},{id:'silver',name:'银色',hex:'#c7ccd1'},{id:'heat',name:'热压',hex:null}];
@@ -36,7 +36,7 @@ function renderOptions(){
  document.querySelectorAll('[data-step]').forEach(b=>b.setAttribute('aria-current',String(+b.dataset.step===activeStep)));
  if(part){$('#options').innerHTML=`<div class="leather-options" role="group" aria-label="${name}皮料">${leatherSpecs.map(l=>`<div class="leather-option"><button class="leather-button" data-material="${l.id}" aria-pressed="${state[id+'Material']===l.id}">${l.name}</button>${materialCard(l)}<button class="material-info-button" data-info="${l.id}" aria-label="查看 ${l.name} 皮料信息">详情</button></div>`).join('')}</div>${swatches(id,palette)}`}
  else if(id==='thread'||id==='edge')$('#options').innerHTML=`<div class="leather-options"><button class="leather-button fixed-option" aria-pressed="true" aria-label="${id==='thread'?'高品质亚麻手缝线':'意大利 FENICE 边油'}">${id==='thread'?'高品质亚麻手缝线':'意大利 FENICE 边油'}</button></div>${swatches(id,id==='thread'?threads:palette)}`;
- else if(id==='crease')$('#options').innerHTML=`<div class="detail-options" role="group" aria-label="边缘装饰线"><button class="choice" data-crease="single" aria-pressed="${state.crease==='single'}">有</button><button class="choice" data-crease="none" aria-pressed="${state.crease==='none'}">无</button></div>`;
+ else if(id==='crease')$('#options').innerHTML=`<div class="detail-options" role="group" aria-label="边缘装饰线"><button class="leather-button choice" data-crease="single" aria-pressed="${state.crease==='single'}">有</button><button class="leather-button choice" data-crease="none" aria-pressed="${state.crease==='none'}">无</button></div>`;
  else $('#options').innerHTML=`<div class="input-wrap"><input id="monogram" aria-label="烫金文字，最多7个英文或数字" maxlength="7" pattern="[A-Za-z0-9]*" autocomplete="off" spellcheck="false" value="${state.monogram}" placeholder="支持输入英文 / 数字"></div>${swatches('foil',foilColors.map(c=>({...c,hex:c.hex||color(state.front).hex})))}`;
  document.querySelectorAll('[data-material]').forEach(b=>b.onclick=()=>{state[id+'Material']=b.dataset.material;document.querySelectorAll('[data-material]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));applyMaterials(id)});
  function showMaterialInfo(id){$('#material-dialog-content').innerHTML=materialCard(spec(id));$('#material-dialog-content h3').id='material-dialog-title';$('#material-dialog').showModal()}
@@ -44,14 +44,17 @@ function renderOptions(){
  document.querySelectorAll('[data-material]').forEach(b=>{let press=null,opened=false;b.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'){opened=false;press=setTimeout(()=>{opened=true;showMaterialInfo(b.dataset.material)},500)}});for(const event of ['pointerup','pointercancel','pointerleave'])b.addEventListener(event,()=>clearTimeout(press));b.addEventListener('click',e=>{if(opened){e.stopImmediatePropagation();opened=false}},true)});
  document.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{state[id==='monogram'?'foil':id]=b.dataset.color;document.querySelectorAll('[data-color]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));applyMaterials(id==='monogram'?'foil':id)});
  document.querySelectorAll('[data-crease]').forEach(b=>b.onclick=()=>{state.crease=b.dataset.crease;needsRender=true;document.querySelectorAll('[data-crease]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));for(const m of Object.values(meshes))m.children.filter(x=>x.userData.surface).forEach(x=>setPressedGeometry(x.geometry,state.crease==='single'))});
- if($('#monogram'))$('#monogram').oninput=e=>{const value=e.target.value.replace(/[^a-zA-Z0-9]/g,'').slice(0,7);state.monogram=value;e.target.value=value;updateLetters()};
+ const input=$('#monogram');
+ if(input){input.onfocus=()=>input.placeholder='';input.onblur=()=>input.placeholder='支持输入英文 / 数字';input.oninput=e=>{const value=e.target.value.replace(/[^a-zA-Z0-9]/g,'').slice(0,7);state.monogram=value;e.target.value=value;updateLetters()}}
 }
 for(const d of document.querySelectorAll('dialog')){d.querySelector('.close-dialog').onclick=()=>d.close();d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close()}})}
 function toast(message){$('#toast').textContent=message;$('#toast').hidden=false;setTimeout(()=>$('#toast').hidden=true,2300)}
 $('#reset-all').onclick=()=>{state={...initial};applyMaterials();for(const m of Object.values(meshes))m.children.filter(x=>x.userData.surface).forEach(x=>setPressedGeometry(x.geometry,true));selectStep(0);resetView()};
 function orderRows(config=state){
- const rows=parts.map(p=>({label:p.name,value:`${spec(config[p.id+'Material']).name} / ${color(config[p.id]).name}`,hex:color(config[p.id]).hex}));
- rows.push({label:'缝线',value:`高品质亚麻手缝线 / ${color(config.thread).name}`,hex:color(config.thread).hex},{label:'边油',value:`意大利 FENICE 边油 / ${color(config.edge).name}`,hex:color(config.edge).hex},{label:'边缘装饰线',value:config.crease==='none'?'无':'有',hex:null},{label:'烫金文字',value:config.monogram?`${config.monogram} / ${color(config.foil,foilColors).name}`:'无',hex:config.monogram?(config.foil==='heat'?'#'+new THREE.Color(color(config.front).hex).multiplyScalar(.5).getHexString():color(config.foil,foilColors).hex):null});return rows;
+ const hasText=!!config.monogram,baseCents=24900,stampCents=hasText?5000:0,money=cents=>'¥'+(cents/100).toFixed(2);
+ const rows=[{label:'基础价格',value:'',amount:money(baseCents)}];
+ rows.push(...parts.map(p=>({label:p.name,value:`${color(config[p.id]).name}·${spec(config[p.id+'Material']).name}`,hex:color(config[p.id]).hex})));
+ rows.push({label:'缝线',value:color(config.thread).name,hex:color(config.thread).hex},{label:'边油',value:color(config.edge).name,hex:color(config.edge).hex},{label:'边缘装饰线',value:config.crease==='none'?'无':'有',hex:null},{label:'烫金文字',value:hasText?`${color(config.foil,foilColors).name}·${config.monogram}`:'无',hex:hasText?(config.foil==='heat'?'#'+new THREE.Color(color(config.front).hex).multiplyScalar(.5).getHexString():color(config.foil,foilColors).hex):null,amount:hasText?'+'+money(stampCents):null},{label:'总价',value:'',amount:money(baseCents+stampCents),total:true});return rows;
 }
 function captureOrderViews(){
  clearPartHighlight();const size=renderer.getSize(new THREE.Vector2()),pixelRatio=renderer.getPixelRatio(),view=new THREE.PerspectiveCamera(32,4/3,.08,50),images=[];
@@ -68,7 +71,7 @@ $('#save-design').onclick=async()=>{
  $('#save-design').disabled=true;$('#download-design').disabled=true;image.hidden=true;status.textContent='正在生成';status.hidden=false;dialog.showModal();
  try{
   const [front,back]=captureOrderViews(),blob=await createCustomizationSheet({front,back,rows});if(orderImageURL)URL.revokeObjectURL(orderImageURL);orderImageURL=URL.createObjectURL(blob);
-  image.src=orderImageURL;image.alt='hidebook 定制单；'+rows.map(r=>r.label+'：'+r.value).join('；');image.hidden=false;status.hidden=true;$('#download-design').disabled=false;
+  image.src=orderImageURL;image.alt='hidebook 定制单；'+rows.map(r=>r.label+'：'+[r.value,r.amount].filter(Boolean).join(' ')).join('；');image.hidden=false;status.hidden=true;$('#download-design').disabled=false;
  }catch(error){console.error(error);status.textContent='图片生成失败，请关闭后重试'}finally{$('#save-design').disabled=false}
 };
 $('#download-design').onclick=()=>{if(!orderImageURL)return;const a=document.createElement('a');a.href=orderImageURL;a.download='hidebook-customization.png';a.click()};
@@ -179,7 +182,7 @@ function highlightPart(id){
   const material=leatherMaterials[id]||(id==='thread'?threadMaterial:id==='edge'?edgeMaterial:id==='monogram'&&state.monogram?foilMaterial:leatherMaterials.front);
   material.emissive.set('#ffffff');material.emissiveIntensity=0;materials.push(material);
  }
- partHighlight={id,start:null,settleAt:null,materials,overlay,duration:reducedMotion?650:2800};needsRender=true;
+ partHighlight={id,start:null,settleAt:null,materials,overlay,duration:reducedMotion?350:1200};needsRender=true;
 }
 function focusPart(id){
  const preset={rear:{p:[-1.3,.65,-5.7],t:[0,.05,0]},body:{p:[1.0,2.1,5.6],t:[0,.38,0]},accent:{p:[.65,1.0,5.15],t:[0,.19,.07]},front:{p:[.8,.45,5.2],t:[0,-.26,.08]},thread:{p:[-.6,.25,4.8],t:[-.16,-.10,.07]},edge:{p:[4.4,1.4,4.2],t:[0,-.1,0]},crease:{p:[.5,.6,4.5],t:[0,-.1,0]},monogram:{p:[.55,-.24,3.25],t:[.57,-.51,.07]}}[id];moveCamera(preset.p,preset.t);
@@ -197,9 +200,6 @@ function init(){
  controls.addEventListener('start',()=>{cameraMotion=null;clearPartHighlight();document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed','false'))});
  ready=true;applyMaterials();$('#save-design').disabled=false;camera.position.set(1.2,.8,6).normalize().multiplyScalar(DEFAULT_VIEW_DISTANCE);controls.update();
  function resize(){const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/h;camera.fov=w/h<1.1?THREE.MathUtils.radToDeg(2*Math.atan(Math.tan(THREE.MathUtils.degToRad(43)/2)/(w/h))):32;camera.updateProjectionMatrix();renderer.setSize(w,h);needsRender=true}new ResizeObserver(resize).observe(host);resize();
- const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();let down;
- renderer.domElement.addEventListener('pointerdown',e=>down={x:e.clientX,y:e.clientY,time:performance.now()});
- renderer.domElement.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down.x,e.clientY-down.y)>5||performance.now()-down.time>500)return;const r=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-r.left)/r.width*2-1,1-(e.clientY-r.top)/r.height*2);raycaster.setFromCamera(pointer,camera);const hit=raycaster.intersectObjects(Object.values(meshes),true)[0];if(hit){const part=hit.object.parent.name;selectStep(parts.findIndex(p=>p.id===part))}});
  host.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','+','-','='].includes(e.key))return;e.preventDefault();cameraMotion=null;clearPartHighlight();const s=new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));if(e.key==='ArrowLeft')s.theta-=.12;if(e.key==='ArrowRight')s.theta+=.12;if(e.key==='ArrowUp')s.phi-=.12;if(e.key==='ArrowDown')s.phi+=.12;if(['+','='].includes(e.key))s.radius-=.3;if(e.key==='-')s.radius+=.3;s.phi=Math.max(.05,Math.min(Math.PI-.05,s.phi));s.radius=Math.max(MIN_VIEW_DISTANCE,Math.min(DEFAULT_VIEW_DISTANCE,s.radius));camera.position.copy(new THREE.Vector3().setFromSpherical(s).add(controls.target));controls.update()});
  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();$('#loading').textContent='预览已中断，请刷新';$('#loading').hidden=false});$('#loading').hidden=true;
  function frame(){
@@ -208,10 +208,10 @@ function init(){
   const controlsMoved=controls.update();changed=controlsMoved||changed;
   if(partHighlight){
    changed=true;const a=partHighlight;
-   if(a.start===null){if(cameraMotion||controlsMoved)a.settleAt=null;else if(a.settleAt===null)a.settleAt=now;else if(now-a.settleAt>160)a.start=now}
+   if(a.start===null){if(cameraMotion||controlsMoved)a.settleAt=null;else if(a.settleAt===null)a.settleAt=now;else if(now-a.settleAt>60)a.start=now}
    if(a.start!==null){
-    const elapsed=now-a.start,fadeIn=reducedMotion?150:1000,hold=reducedMotion?200:400,fadeOut=reducedMotion?300:1400;
-    const pulse=elapsed<fadeIn?THREE.MathUtils.smoothstep(elapsed,0,fadeIn):elapsed<fadeIn+hold?1:1-THREE.MathUtils.smoothstep(elapsed-fadeIn-hold,0,fadeOut);
+    const elapsed=now-a.start,fadeIn=reducedMotion?150:500,fadeOut=reducedMotion?200:700;
+    const pulse=elapsed<fadeIn?THREE.MathUtils.smoothstep(elapsed,0,fadeIn):1-THREE.MathUtils.smoothstep(elapsed-fadeIn,0,fadeOut);
     for(const m of a.materials)m.emissiveIntensity=.20*pulse;if(a.overlay)for(const line of a.overlay.children)line.material.opacity=.85*pulse;
     if(elapsed>=a.duration)clearPartHighlight();
    }

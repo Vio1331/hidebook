@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {MM,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,STITCH_INSET,THREAD_DIAMETER,seamPath,stitchSegments,surfaceZ,slotTop,openingOffset} from './leather-geometry.js?v=20261002d';
+import {MM,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,STITCH_INSET,THREAD_DIAMETER,seamPath,stitchSegments,surfaceZ,slotTop,openingOffset} from './leather-geometry.js?v=20261002j';
 export const LINEN_PLIES=3,LINEN_TWIST_MM=2.6;
 export function stitchZ(x,y,back){
  if(back)return surfaceZ('rear',x,y,true,false)-.045*MM;
@@ -80,9 +80,9 @@ export function linenGeometry(points){
 // A single continuous edge coat spans the glued stack. There are no per-layer
 // ridges. Only the outside silhouette steps at the pocket mouths.
 export function edgePaintGeometry(){
- const p=[],ind=[],cross=20,rows=[];
+ const p=[],ind=[],cross=20,rows=[],frontTop=PART_TOP.front/MM,accentTop=PART_TOP.accent/MM;
  for(let y=-25;y<34.5;y+=.5)rows.push({y});
- for(const top of [13,24]){
+ for(const top of [frontTop,accentTop]){
   for(let j=0;j<=16;j++)rows.push({y:top-.5+.525*j/16,cap:top});
   rows.push({y:top+.025,above:true,cap:top});
  }
@@ -91,9 +91,9 @@ export function edgePaintGeometry(){
  function limits(row){
   const y=row.y;
   if(y>=34.5){const r=Math.sqrt(Math.max(0,.525**2-(y-34.5)**2));return [-1.5-r,-.5+r]}
-  let front=y<13.025?2.025:y<24.025?1.025:.025;
-  if(row.above)front=row.cap===13?1.025:.025;
-  else for(const [top,z] of [[13,1.5],[24,.5]])if(y>=top-.5&&y<=top+.025){front=z+Math.sqrt(Math.max(0,.525**2-(y-top+.5)**2));break}
+  let front=y<frontTop+.025?2.025:y<accentTop+.025?1.025:.025;
+  if(row.above)front=row.cap===frontTop?1.025:.025;
+  else for(const [top,z] of [[frontTop,1.5],[accentTop,.5]])if(y>=top-.5&&y<=top+.025){front=z+Math.sqrt(Math.max(0,.525**2-(y-top+.5)**2));break}
   return [-2.025,front];
  }
  for(const side of [-1,1]){

@@ -3,7 +3,8 @@ export const CARD_WIDTH_MM=107,CARD_HEIGHT_MM=70,MM=3.5/107,LAYER=MM;
 export const HALF=53.5*MM,BOTTOM=-35*MM,BODY_TOP=35*MM;
 export const BOTTOM_RADIUS=10*MM,CREASE_INSET=2*MM,CREASE_WIDTH=.28*MM;
 export const STITCH_INSET=3*MM,THREAD_DIAMETER=.45*MM,STITCH_PITCH=3.38*MM;
-export const ACCENT_TOP=24*MM,FRONT_TOP=13*MM,ATLAS_MM=160;
+export const SLOT_STEP_MM=10.5;
+export const ACCENT_TOP=BODY_TOP-SLOT_STEP_MM*MM,FRONT_TOP=ACCENT_TOP-SLOT_STEP_MM*MM,ATLAS_MM=160;
 export const PART_TOP={rear:BODY_TOP,body:BODY_TOP,accent:ACCENT_TOP,front:FRONT_TOP};
 export const PART_Z={rear:-2*MM,body:-MM,accent:0,front:MM};
 export function slotTop(x,top){return top}
