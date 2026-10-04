@@ -1,0 +1,154 @@
+{
+  "checked": "2026-10-05",
+  "sampling": "Median sRGB of central 25x25 pixels of official color thumbnail. Preview only; not measured physical leather color. Some product thumbnails represent another leather or a two-color product.",
+  "colors": [
+    {
+      "id": "nymphe",
+      "product": "044166CKT7",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/044166CKT7_thumbnail_20?%24product_item_grid_g%24=&defaultimage=044166CKT7_set&hei=65&wid=65",
+      "hex": "#0c69ac",
+      "status": "photo sample"
+    },
+    {
+      "id": "abyss",
+      "product": "078476CKBE",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/078476CKBE_thumbnail_20?%24product_item_grid_g%24=&defaultimage=078476CKBE_set&hei=65&wid=65",
+      "hex": "#373b3f",
+      "status": "photo sample"
+    },
+    {
+      "id": "mist",
+      "product": "082060CCP0",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/082060CCP0_thumbnail_20?%24product_item_grid_g%24=&defaultimage=082060CCP0_set&hei=65&wid=65",
+      "hex": "#989897",
+      "status": "photo sample"
+    },
+    {
+      "id": "orange",
+      "product": "044164CK93",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/044164CK93_thumbnail_20?%24product_item_grid_g%24=&defaultimage=044164CK93_set&hei=65&wid=65",
+      "hex": "#e07335",
+      "status": "photo sample"
+    },
+    {
+      "id": "mauve",
+      "product": "083035CKX9",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/083035CKX9_thumbnail_20?%24product_item_grid_g%24=&defaultimage=083035CKX9_set&hei=65&wid=65",
+      "hex": "#dca7b9",
+      "status": "photo sample"
+    },
+    {
+      "id": "comic",
+      "product": "078309CK0Z",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/078309CK0Z_thumbnail_20?%24product_item_grid_g%24=&defaultimage=078309CK0Z_set&hei=65&wid=65",
+      "hex": "#31b97a",
+      "status": "photo sample"
+    },
+    {
+      "id": "yucca",
+      "product": "083035CKA8",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/083035CKA8_thumbnail_20?%24product_item_grid_g%24=&defaultimage=083035CKA8_set&hei=65&wid=65",
+      "hex": "#436a2d",
+      "status": "photo sample"
+    },
+    {
+      "id": "milton",
+      "product": "044164CKI8",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/044164CKI8_thumbnail_20?%24product_item_grid_g%24=&defaultimage=044164CKI8_set&hei=65&wid=65",
+      "hex": "#ded8b3",
+      "status": "photo sample"
+    },
+    {
+      "id": "azalee",
+      "product": "083035CK8W",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/083035CK8W_thumbnail_20?%24product_item_grid_g%24=&defaultimage=083035CK8W_set&hei=65&wid=65",
+      "hex": "#f6768a",
+      "status": "photo sample"
+    },
+    {
+      "id": "biscuit",
+      "product": "082060CC4B",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/082060CC4B_thumbnail_20?%24product_item_grid_g%24=&defaultimage=082060CC4B_set&hei=65&wid=65",
+      "hex": "#bf8d4e",
+      "status": "photo sample"
+    },
+    {
+      "id": "duck",
+      "product": "083035CK1P",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/083035CK1P_thumbnail_20?%24product_item_grid_g%24=&defaultimage=083035CK1P_set&hei=65&wid=65",
+      "hex": "#295f6d",
+      "status": "photo sample"
+    },
+    {
+      "id": "naples",
+      "product": "083035CK9O",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/083035CK9O_thumbnail_20?%24product_item_grid_g%24=&defaultimage=083035CK9O_set&hei=65&wid=65",
+      "hex": "#e9c527",
+      "status": "photo sample"
+    },
+    {
+      "id": "celeste",
+      "product": "083035CK7N",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/083035CK7N_thumbnail_20?%24product_item_grid_g%24=&defaultimage=083035CK7N_set&hei=65&wid=65",
+      "hex": "#7fb3d3",
+      "status": "photo sample"
+    },
+    {
+      "id": "new-jean",
+      "product": "082977CKD2",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/082977CKD2_thumbnail_20?%24product_item_grid_g%24=&defaultimage=082977CKD2_set&hei=65&wid=65",
+      "hex": "#457d8c",
+      "status": "photo sample"
+    },
+    {
+      "id": "zanzibar",
+      "product": "084991CAB3",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/084991CAB3_thumbnail_20?%24product_item_grid_g%24=&defaultimage=084991CAB3_set&hei=65&wid=65",
+      "hex": "#0967a5",
+      "status": "photo sample"
+    },
+    {
+      "id": "cement",
+      "product": "064949CA8L",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/064949CA8L_thumbnail_20?%24product_item_grid_g%24=&defaultimage=064949CA8L_set&hei=65&wid=65",
+      "hex": "#b9b2a8",
+      "status": "photo sample"
+    },
+    {
+      "id": "glacier",
+      "product": "084991CA8U",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/084991CA8U_thumbnail_20?%24product_item_grid_g%24=&defaultimage=084991CA8U_set&hei=65&wid=65",
+      "hex": "#acb3b5",
+      "status": "photo sample"
+    },
+    {
+      "id": "slate",
+      "product": "084321CK85",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/084321CK85_thumbnail_20?%24product_item_grid_g%24=&defaultimage=084321CK85_set&hei=65&wid=65",
+      "hex": "#4b4a4e",
+      "status": "photo sample"
+    },
+    {
+      "id": "rouge-h",
+      "product": "044164CK55",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/044164CK55_thumbnail_20?%24product_item_grid_g%24=&defaultimage=044164CK55_set&hei=65&wid=65",
+      "hex": "#602626",
+      "status": "photo sample"
+    },
+    {
+      "id": "casaque",
+      "product": "083035CKQ5",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/083035CKQ5_thumbnail_20?%24product_item_grid_g%24=&defaultimage=083035CKQ5_set&hei=65&wid=65",
+      "hex": "#ad1b2d",
+      "status": "photo sample"
+    },
+    {
+      "id": "deep",
+      "product": "083036CKAV",
+      "image": "https://assets.hermes.cn/is/image/hermesproduct/calvi-duo%E5%8F%8C%E8%89%B2%E7%9F%AD%E5%8D%A1%E5%8C%85--083036CKAV-above-wm-4-0-0-800-800_g.jpg",
+      "sampling": "Median sRGB of inner dark-blue leather crop x370:400 y300:330, 800px photograph.",
+      "hex": "#1e4256",
+      "status": "photo sample"
+    }
+  ]
+}
