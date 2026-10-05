@@ -4,9 +4,9 @@ import {MM,LAYER,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,ATLAS_MM,CREASE_INSET,STIT
 import {loadPhotoMaterials,leatherSpecs} from './photo-materials.js?v=20261002h';
 import {seamCurves,linenGeometry,edgePaintGeometry,LINEN_PLIES} from './leather-details.js?v=20261002n';
 import {createStudioLighting,createStudioEnvironment} from './studio-lighting.js?v=20261002i';
-import {createCustomizationSheet} from './customization-sheet.js?v=20261005c';
-import * as pop from './pop-geometry.js?v=20261005c';
-import {popColors,popPalettes,popAccessoryPalette} from './pop-colors.js?v=20261005c';
+import {createCustomizationSheet} from './customization-sheet.js?v=20261005d';
+import * as pop from './pop-geometry.js?v=20261005d';
+import {popColors,popPalettes,popAccessoryPalette} from './pop-colors.js?v=20261005d';
 const $=s=>document.querySelector(s);
 const palette=[{id:'black',name:'黑色',hex:'#363634'},{id:'craie',name:'粉笔白',hex:'#dacdbb'},{id:'gold',name:'金色',hex:'#8c5732'},{id:'caramel',name:'焦糖色',hex:'#ae7238'},{id:'etoupe',name:'大象灰',hex:'#736154'}];
 const foilColors=[{id:'gold',name:'金色',hex:'#e3bd60'},{id:'silver',name:'银色',hex:'#c7ccd1'},{id:'heat',name:'热压',hex:null}];
@@ -18,7 +18,7 @@ const classicSteps=[...classicParts,{id:'thread',name:'缝线'},{id:'edge',name:
 const initial={rearMaterial:'epsom',bodyMaterial:'epsom',accentMaterial:'epsom',frontMaterial:'epsom',rear:'black',body:'black',accent:'black',front:'black',edge:'black',thread:'craie',crease:'single',monogram:'',foil:'gold'};
 const popParts=classicParts.filter(p=>p.id!=='body');
 const popDetails=[{id:'outerThread',name:'外侧缝线'},{id:'innerThread',name:'内侧缝线'},{id:'outerEdge',name:'外侧边油'},{id:'innerEdge',name:'内侧边油'}];
-const products={classic:{name:'Cardholder Classic',parts:classicParts,steps:classicSteps,initial},pop:{name:'Cardholder Pop',parts:popParts,steps:[...popParts,...popDetails,{id:'crease',name:'边缘装饰线'}],initial:{rearMaterial:'epsom',accentMaterial:'epsom',frontMaterial:'epsom',rear:'duck',accent:'naples',front:'casaque',outerEdge:'naples',innerEdge:'naples',outerThread:'craie',innerThread:'craie',crease:'single',monogram:'',foil:'gold'}}};
+const products={classic:{name:'Cardholder Classic',parts:classicParts,steps:classicSteps,initial},pop:{name:'Cardholder Pop',parts:popParts,steps:[...popParts,...popDetails,{id:'crease',name:'边缘装饰线'}],initial:{rearMaterial:'epsom',accentMaterial:'epsom',frontMaterial:'epsom',rear:'nymphe',accent:'naples',front:'casaque',outerEdge:'craie',innerEdge:'naples',outerThread:'craie',innerThread:'naples',crease:'single',monogram:'',foil:'gold'}}};
 let product='classic',parts=products.classic.parts,steps=products.classic.steps;
 const savedConfigurations={classic:{...initial},pop:{...products.pop.initial}};
 const isPop=()=>product==='pop';
