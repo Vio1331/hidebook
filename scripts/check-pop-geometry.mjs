@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {MM} from '../dist/leather-geometry.js';
 import {POP,bounds,popRing,popSurface,popSurfaceZ,popSetPressed,popEdge,popStitches,popDistance} from '../dist/pop-geometry.js';
-import {popPalettes} from '../dist/pop-colors.js';
+import {popPalettes,popAccessoryPalette} from '../dist/pop-colors.js';
 const near=(a,b,e=1e-5)=>assert.ok(Math.abs(a-b)<e,`${a} != ${b}`);
 near(bounds.rear.half*2,107);near(bounds.rear.top-bounds.rear.bottom,80);near(bounds.rear.rt,10);near(bounds.front.rb,10);
 near(bounds.accent.half*2,85);near(bounds.accent.top-bounds.accent.bottom,55);near(bounds.accent.rt*2,6);
@@ -9,6 +9,7 @@ near(bounds.rear.top-bounds.accent.top,15.5);near(bounds.accent.top-bounds.front
 for(const part of ['rear','accent','front']){
  const b=bounds[part],ring=popRing(part);near(Math.max(...ring.map(p=>p.x))/MM,b.half);near(Math.max(...ring.map(p=>p.y))/MM,b.top);
  for(const back of [true,false]){const g=popSurface(part,back),original=g.attributes.position.array.slice();for(const v of original)assert.ok(Number.isFinite(v));popSetPressed(g,true);assert.ok(original.some((v,i)=>v!==g.attributes.position.array[i]));popSetPressed(g,false);for(let i=0;i<original.length;i++)near(original[i],g.attributes.position.array[i]);
+ const normals=g.attributes.normal.array,tangents=g.attributes.tangent.array;for(let i=0;i<normals.length;i+=3){near(Math.hypot(normals[i],normals[i+1],normals[i+2]),1,1e-6);assert.ok(back?normals[i+2]<0:normals[i+2]>0,'Surface normal faces the wrong side');const j=i/3*4;near(Math.hypot(tangents[j],tangents[j+1],tangents[j+2]),1,1e-6);near(normals[i]*tangents[j]+normals[i+1]*tangents[j+1]+normals[i+2]*tangents[j+2],0,1e-6);assert.equal(tangents[j+3],back?-1:1);}
  const edges=new Map(),ind=g.index.array;for(let i=0;i<ind.length;i+=3)for(let j=0;j<3;j++){const a=ind[i+j],c=ind[i+(j+1)%3],key=[Math.min(a,c),Math.max(a,c)].join(':');edges.set(key,(edges.get(key)||0)+1)}
  assert.equal([...edges.values()].filter(n=>n===1).length,ring.length,'Only the perimeter is open');assert.ok([...edges.values()].every(n=>n<=2),'Nonmanifold face');g.dispose()}
  for(let y=b.bottom+4;y<b.top-4;y+=2)for(let x=-b.half+4;x<b.half-4;x+=2)near((popSurfaceZ(part,x*MM,y*MM)-popSurfaceZ(part,x*MM,y*MM,true))/MM,1);
@@ -31,5 +32,6 @@ for(const c of seam.curves.filter(c=>c.kind==='edge-bridge'))for(const p of c.po
 for(const p of popRing('front'))if(p.y<bounds.front.top*MM-1e-7)near(popSurfaceZ('front',p.x,p.y,true),popSurfaceZ('rear',p.x,p.y),1e-7);
 for(const x of [-49.5,49.5])for(let y=-30;y<8.5;y+=.5)near(popSurfaceZ('front',x*MM,y*MM,true),popSurfaceZ('rear',x*MM,y*MM),1e-7);
 assert.deepEqual(popPalettes.epsom.map(c=>c.name),['卡萨克红','橙色','那不勒斯黄','炫绿色','丝兰绿','鸭绿色','天蓝色','水妖蓝','深邃蓝','锦葵紫','杜鹃粉','粉笔白']);
-assert.deepEqual(popPalettes.evercolor.map(c=>c.name),['爱马仕红','新牛仔蓝','尚西巴岛蓝','饼干色','金色','冰川蓝','水泥灰','石板灰','大象灰']);
-console.log('PASS: Pop 107×80, middle 85×55/R3, lower 48.5 mm; three 1 mm bonded pairs; bonded shared outer boundary and continuous coat; connected faces; no layer intersections; 3.38 mm side pitch; mouth centred between holes on both sides; 12/9 material colors in requested order.');
+assert.deepEqual(popPalettes.evercolor.map(c=>c.name),['爱马仕红','饼干色','金色','冰川蓝','水泥灰','石板灰','大象灰']);
+assert.deepEqual(popAccessoryPalette.map(c=>c.id),[...popPalettes.epsom,...popPalettes.evercolor].map(c=>c.id));
+console.log('PASS: Pop 107×80, middle 85×55/R3, lower 48.5 mm; three 1 mm bonded pairs; bonded shared outer boundary and continuous coat; connected faces; no layer intersections; 3.38 mm side pitch; mouth centred between holes on both sides; 12/7 material colors in requested order.');

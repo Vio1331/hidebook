@@ -28,5 +28,8 @@ export const popColors=[
 const colors=ids=>ids.map(id=>popColors.find(c=>c.id===id));
 export const popPalettes={
  epsom:colors(['casaque','orange','naples','comic','yucca','duck','celeste','nymphe','deep','mauve','azalee','craie']),
- evercolor:colors(['rouge-h','new-jean','zanzibar','biscuit','gold','glacier','cement','slate','etoupe'])
+ evercolor:colors(['rouge-h','biscuit','gold','glacier','cement','slate','etoupe'])
 };
+
+// Epsom first, then Evercolor; shared names appear once.
+export const popAccessoryPalette=[...popPalettes.epsom,...popPalettes.evercolor].filter((c,i,all)=>all.findIndex(p=>p.id===c.id)===i);

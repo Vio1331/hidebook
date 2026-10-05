@@ -26,18 +26,39 @@ function gap(part,x,y){
  const b=bounds[part],side=THREE.MathUtils.smoothstep(popDistance(part,x,Math.min(y,(b.top-10)*MM))/MM,4,10),rise=THREE.MathUtils.clamp((y/MM-b.bottom-4)/(b.top-b.bottom-4),0,1);
  return .45*MM*side*rise**3;
 }
+function smoothRise(value,lo,hi){
+ const t=THREE.MathUtils.clamp((value-lo)/(hi-lo),0,1);
+ return t*t*t*(t*(t*6-15)+10);
+}
+function lowerOpening(x,y){
+ // A broad, smooth plateau clears the middle layer without copying its outline
+ // into the lower pocket's face. The entire outer seam remains glued to the base.
+ const side=smoothRise(bounds.front.half-Math.abs(x/MM),4,11),bottom=smoothRise(y/MM-bounds.front.bottom,4,9),
+ corner=smoothRise(popDistance('front',x,Math.min(y,-5*MM))/MM,4,6),support=side*bottom*corner,
+ rise=THREE.MathUtils.clamp((y/MM-bounds.front.bottom-4)/(bounds.front.top-bounds.front.bottom-4),0,1);
+ return support*(1.25+.4*rise**3)*MM;
+}
 export function popSurfaceZ(part,x,y,back=false,pressed=false){
- // The lower pocket is glued to the base along its two sides and bottom. It
- // rises only inward of that seam, over the 1 mm middle pocket where present.
- const overMiddle=THREE.MathUtils.smoothstep(popDistance('accent',x,y)/MM,-5.5,-1),
- opening=part==='front'?overMiddle*(1.05*MM+gap('accent',x,y))+gap('front',x,y):gap(part,x,y);
+ const opening=part==='front'?lowerOpening(x,y):gap(part,x,y);
  const groove=pressed?.10*MM*Math.exp(-(((popDistance(part,x,y)-2*MM)/(.115*MM))**2)):0;
  return (bounds[part].z+(back?0:1))*MM+opening+(back?groove:-groove);
+}
+function setSurfaceNormals(geo,pressed){
+ // Derive normals from the smooth surface, avoiding diagonal shading caused by
+ // long triangles where the concentric mesh turns around square pocket corners.
+ const p=geo.attributes.position.array,{part,back}=geo.userData,attribute=geo.getAttribute('normal')||new THREE.BufferAttribute(new Float32Array(p.length),3),normals=attribute.array,tangent=geo.getAttribute('tangent')||new THREE.BufferAttribute(new Float32Array(p.length/3*4),4),tangents=tangent.array,h=.015*MM;
+ for(let i=0;i<p.length;i+=3){const x=p[i],y=p[i+1],dx=(popSurfaceZ(part,x+h,y,back,pressed)-popSurfaceZ(part,x-h,y,back,pressed))/(2*h),dy=(popSurfaceZ(part,x,y+h,back,pressed)-popSurfaceZ(part,x,y-h,back,pressed))/(2*h),sign=back?-1:1,len=Math.hypot(dx,dy,1);normals[i]=-dx/len*sign;normals[i+1]=-dy/len*sign;normals[i+2]=sign/len;
+  // UV +X follows the surface +X direction. Supplying this frame also prevents
+  // the grain normal map from turning long mesh triangles into diagonal creases.
+  const j=i/3*4,length=Math.hypot(1,dx);tangents[j]=1/length;tangents[j+1]=0;tangents[j+2]=dx/length;tangents[j+3]=sign;
+ }
+ geo.setAttribute('normal',attribute);attribute.needsUpdate=true;
+ geo.setAttribute('tangent',tangent);tangent.needsUpdate=true;
 }
 export function popSetPressed(geo,pressed){
  const p=geo.attributes.position.array,{part,back}=geo.userData;
  for(let i=0;i<p.length;i+=3)p[i+2]=popSurfaceZ(part,p[i],p[i+1],back,pressed);
- geo.attributes.position.needsUpdate=true;geo.computeVertexNormals();
+ geo.attributes.position.needsUpdate=true;setSurfaceNormals(geo,pressed);
 }
 export function popSurface(part,back=false){
  const positions=[],uv=[],indices=[],outer=popRing(part),cy=(bounds[part].bottom+bounds[part].top)/2*MM;
@@ -52,7 +73,7 @@ export function popSurface(part,back=false){
  for(let k=1;k<=14;k++){const s=1-k/15,ids=inner.map(p=>add(p.x*s,cy+(p.y-cy)*s));for(let i=0;i<ids.length;i++){const j=(i+1)%ids.length;indices.push(previous[i],previous[j],ids[i],previous[j],ids[j],ids[i])}previous=ids}
  const c=add(0,cy);for(let i=0;i<previous.length;i++)indices.push(previous[i],previous[(i+1)%previous.length],c);
  if(back)for(let i=0;i<indices.length;i+=3)[indices[i+1],indices[i+2]]=[indices[i+2],indices[i+1]];
- const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();g.userData={part,back};return g;
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.userData={part,back};setSurfaceNormals(g,false);return g;
 }
 export function popEdge(part){
  // One outer shell seals the base + lower pocket together. The lower pocket's
