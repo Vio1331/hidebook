@@ -21,11 +21,6 @@ export function popDistance(part,x,y){
  for(const [r,cy,test] of [[b.rt,b.top-b.rt,py>b.top-b.rt],[b.rb,b.bottom+b.rb,py<b.bottom+b.rb]])if(r&&test&&px>b.half-r)return (r-Math.hypot(px-(b.half-r),py-cy))*MM;
  return Math.min(b.half-px,py-b.bottom,b.top-py)*MM;
 }
-function gap(part,x,y){
- if(part==='rear')return 0;
- const b=bounds[part],side=THREE.MathUtils.smoothstep(popDistance(part,x,Math.min(y,(b.top-10)*MM))/MM,4,10),rise=THREE.MathUtils.clamp((y/MM-b.bottom-4)/(b.top-b.bottom-4),0,1);
- return .45*MM*side*rise**3;
-}
 function smoothRise(value,lo,hi){
  const t=THREE.MathUtils.clamp((value-lo)/(hi-lo),0,1);
  return t*t*t*(t*(t*6-15)+10);
@@ -39,7 +34,8 @@ function lowerOpening(x,y){
  return support*(1.25+.4*rise**3)*MM;
 }
 export function popSurfaceZ(part,x,y,back=false,pressed=false){
- const opening=part==='front'?lowerOpening(x,y):gap(part,x,y);
+ // The middle pocket is a flat bonded pair, without a bowed mouth or body.
+ const opening=part==='front'?lowerOpening(x,y):0;
  const groove=pressed?.10*MM*Math.exp(-(((popDistance(part,x,y)-2*MM)/(.115*MM))**2)):0;
  return (bounds[part].z+(back?0:1))*MM+opening+(back?groove:-groove);
 }

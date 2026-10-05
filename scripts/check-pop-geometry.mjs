@@ -15,7 +15,13 @@ for(const part of ['rear','accent','front']){
  for(let y=b.bottom+4;y<b.top-4;y+=2)for(let x=-b.half+4;x<b.half-4;x+=2)near((popSurfaceZ(part,x*MM,y*MM)-popSurfaceZ(part,x*MM,y*MM,true))/MM,1);
  const coat=popEdge(part);assert.equal(coat.userData.fullPerimeter,part!=='front');assert.equal(coat.userData.customization,part==='accent'?'innerEdge':'outerEdge');for(const v of coat.attributes.position.array)assert.ok(Number.isFinite(v));coat.dispose();
 }
-// At their overlap, each bonded pair remains separate and the two pockets open at their mouths.
+// The middle pocket's actual mesh is planar on both faces, including its mouth.
+for(const back of [false,true]){
+ const g=popSurface('accent',back),p=g.attributes.position.array,n=g.attributes.normal.array;
+ for(let i=0;i<p.length;i+=3){near(p[i+2],(bounds.accent.z+(back?0:1))*MM,1e-7);near(n[i],0,1e-7);near(n[i+1],0,1e-7);near(n[i+2],back?-1:1,1e-7)}
+ g.dispose();
+}
+// The flat middle pair rests on the base; the lower pocket clears it.
 for(let y=-30;y<8.5;y++)for(let x=-38;x<38;x++){
  assert.ok(popSurfaceZ('accent',x*MM,y*MM,true)>=popSurfaceZ('rear',x*MM,y*MM)-1e-9);
  assert.ok(popSurfaceZ('front',x*MM,y*MM,true)>=popSurfaceZ('accent',x*MM,y*MM)-1e-9);
