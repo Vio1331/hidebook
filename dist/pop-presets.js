@@ -1,4 +1,4 @@
-// Full configurations transcribed from the 16 supplied customization sheets,
+// Full configurations transcribed from the 15 retained customization sheets,
 // in upload order. Thread and edge paint belong to their respective seam loops.
 const fields=['rear','accent','front','outerThread','innerThread','outerEdge','innerEdge'];
 const schemes=[
@@ -16,7 +16,6 @@ const schemes=[
  ['epsom','naples','orange','casaque','naples','orange','casaque','orange'],
  ['epsom','comic','craie','comic','comic','comic','comic','comic'],
  ['evercolor','cement','gold','gold','gold','gold','gold','gold'],
- ['epsom','mauve','mauve','craie','craie','craie','craie','mauve'],
  ['evercolor','glacier','etoupe','cement','cement','etoupe','cement','etoupe'],
 ];
 export const popPresets=schemes.map(([material,...colors],i)=>({
@@ -35,6 +34,5 @@ export function presetThumbnail(preset,color){
  <path d="M10 41.5H117V80A10 10 0 0 1 107 90H20A10 10 0 0 1 10 80Z" fill="${c.front}"/>
  <path d="M10 41.5H117M10 41.5V80A10 10 0 0 0 20 90H107A10 10 0 0 0 117 80V41.5" fill="none" stroke="${c.outerEdge}" stroke-width="1.1"/>
  <rect x="14" y="14" width="99" height="72" rx="6" fill="none" stroke="${c.outerThread}" stroke-width=".6" stroke-dasharray="2.5 .88"/>
- <path d="M12 39.5H115M23 27.5H104" fill="none" stroke="#302c28" stroke-opacity=".25" stroke-width=".3"/>
  </svg>`;
 }

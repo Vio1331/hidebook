@@ -5,9 +5,9 @@ import {loadPhotoMaterials,leatherSpecs} from './photo-materials.js?v=20261002h'
 import {seamCurves,linenGeometry,edgePaintGeometry,LINEN_PLIES} from './leather-details.js?v=20261002n';
 import {createStudioLighting,createStudioEnvironment} from './studio-lighting.js?v=20261002i';
 import {createCustomizationSheet} from './customization-sheet.js?v=20261005d';
-import * as pop from './pop-geometry.js?v=20261005e';
+import * as pop from './pop-geometry.js?v=20261005f';
 import {popColors,popPalettes,popAccessoryPalette} from './pop-colors.js?v=20261005d';
-import {popPresets,matchesPreset,presetThumbnail} from './pop-presets.js?v=20261005e';
+import {popPresets,matchesPreset,presetThumbnail} from './pop-presets.js?v=20261005f';
 const $=s=>document.querySelector(s);
 const palette=[{id:'black',name:'黑色',hex:'#363634'},{id:'craie',name:'粉笔白',hex:'#dacdbb'},{id:'gold',name:'金色',hex:'#8c5732'},{id:'caramel',name:'焦糖色',hex:'#ae7238'},{id:'etoupe',name:'大象灰',hex:'#736154'}];
 const foilColors=[{id:'gold',name:'金色',hex:'#e3bd60'},{id:'silver',name:'银色',hex:'#c7ccd1'},{id:'heat',name:'热压',hex:null}];
@@ -27,6 +27,7 @@ const leatherPalette=id=>isPop()?popPalettes[state[id+'Material']]:palette;
 const accessoryPalette=()=>isPop()?popAccessoryPalette:palette;
 const pieceSurface=(...args)=>isPop()?pop.popSurface(...args):makeLeatherSurface(...args);
 const pressSurface=(...args)=>isPop()?pop.popSetPressed(...args):setPressedGeometry(...args);
+let presetGroup=0;
 let state={...initial},activeStep=0,renderer,scene,camera,controls,root,studio,materialMaps,fontData,ready=false,cameraMotion=null,partHighlight=null,needsRender=true;
 const meshes={},leatherMaterials={},threadObjects=[],letterGroup=new THREE.Group();
 const color=(id,list=[...palette,...popColors])=>list.find(c=>c.id===id);
@@ -44,12 +45,16 @@ function applyPreset(preset){
  if(!ready||!isPop())return;clearPartHighlight();cameraMotion=null;state={...state,...preset.config};savedConfigurations.pop={...state};
  for(const m of Object.values(meshes))m.children.filter(x=>x.userData.surface).forEach(x=>pressSurface(x.geometry,state.crease==='single'));
  orderGeneration++;if(orderImageURL){URL.revokeObjectURL(orderImageURL);orderImageURL=null}$('#download-design').disabled=true;$('#order-image').hidden=true;
- applyMaterials();renderOptions();resetView();$('#preset-status').textContent='已应用配色 '+preset.id;
+ applyMaterials();renderOptions();resetView();
 }
-$('#preset-list').innerHTML=popPresets.map(p=>`<button class="preset-card" data-preset="${p.id}" aria-pressed="false" aria-label="配色 ${p.id}，${spec(p.material).name}，底皮${color(p.config.rear).name}，卡位${color(p.config.accent).name}，下卡位${color(p.config.front).name}">${presetThumbnail(p,color)}<span class="preset-caption"><span>配色 ${p.id}</span><span>${spec(p.material).name}</span></span><span class="preset-check" aria-hidden="true">✓</span></button>`).join('');
-document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>applyPreset(popPresets.find(p=>p.id===b.dataset.preset)));
-$('#recommended-colors').onclick=()=>{if(!ready||!isPop())return;const open=$('#preset-panel').hidden;closeMenu();$('#preset-panel').hidden=!open;$('#recommended-colors').setAttribute('aria-expanded',String(open));if(open){updatePresetSelection();$('#close-presets').focus()}};
-$('#close-presets').onclick=()=>closePresets(true);
+function renderPresets(){
+ $('#preset-list').innerHTML=popPresets.slice(presetGroup*3,presetGroup*3+3).map(p=>`<button class="preset-card" data-preset="${p.id}" aria-pressed="false" aria-label="底皮${color(p.config.rear).name}，卡位${color(p.config.accent).name}，下卡位${color(p.config.front).name}">${presetThumbnail(p,color)}</button>`).join('');
+ document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>applyPreset(popPresets.find(p=>p.id===b.dataset.preset)));
+ updatePresetSelection();
+}
+$('#next-preset-group').onclick=()=>{presetGroup=(presetGroup+1)%5;renderPresets()};
+renderPresets();
+$('#recommended-colors').onclick=()=>{if(!ready||!isPop())return;const open=$('#preset-panel').hidden;closeMenu();$('#preset-panel').hidden=!open;$('#recommended-colors').setAttribute('aria-expanded',String(open));if(open)updatePresetSelection()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#preset-panel').hidden){closePresets(true);e.preventDefault()}});
 document.addEventListener('click',e=>{if(!e.target.closest('#preset-panel,#recommended-colors'))closePresets()});
 function materialCard(l){return `<article class="material-card"><img src="./materials/baked/${l.id}-sample.jpg?v=${['togo','evercolor','swift'].includes(l.id)?'20261002h':'20261002d'}" alt="${l.name} 皮纹"><header><h3>${l.name}</h3><span>${l.kind}</span></header><dl><dt>外观</dt><dd>${l.appearance}</dd><dt>触感</dt><dd>${l.touch}</dd><dt>手感</dt><dd>${l.feel}</dd><dt>使用</dt><dd>${l.aging}</dd></dl></article>`}
