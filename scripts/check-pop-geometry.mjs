@@ -32,9 +32,15 @@ assert.equal(returns.length,8,'Two backstitches per side, on both faces');
 for(const side of ['left','right'])for(const back of [false,true]){
  const group=returns.filter(c=>c.side===side&&c.back===back);assert.deepEqual(group.map(c=>c.stitch).sort(),[0,1]);
  for(const c of group){
-  const outgoing=seam.curves.find(o=>o.part==='rear'&&o.back===back&&o.kind!=='mouth-backstitch'&&o.points[0].distanceTo(c.points.at(-1))<1e-9&&o.points.at(-1).distanceTo(c.points[0])<1e-9);
-  assert.ok(outgoing,'Return uses existing holes');
-  const a=c.points[10],b=outgoing.points[10];near(Math.abs(a.x-b.x)/MM,.38);assert.ok(back?a.z<b.z:a.z>b.z);
+  const outgoing=seam.curves.find(o=>o.part==='rear'&&o.back===back&&o.side===side&&o.stitch===c.stitch&&o.strand===-.5);
+  assert.ok(outgoing,'Every return has its paired outgoing strand');
+  const reversed=[...c.points].reverse(),offset=reversed[0].clone().sub(outgoing.points[0]);
+  near(Math.hypot(offset.x,offset.y)/MM,.42);
+  for(let j=0;j<reversed.length;j++){
+   near(reversed[j].x-outgoing.points[j].x,offset.x,1e-10);near(reversed[j].y-outgoing.points[j].y,offset.y,1e-10);
+   const t=j/(reversed.length-1),first=reversed[0],last=reversed.at(-1);
+   near(reversed[j].x,first.x+(last.x-first.x)*t,1e-10);near(reversed[j].y,first.y+(last.y-first.y)*t,1e-10);
+  }
   if(!back)for(const p of c.points.slice(2,-2))if(p.y<=bounds.front.top*MM)assert.ok(p.z>=popSurfaceZ('front',p.x,p.y)-.005*MM,'Backstitch intersects pocket lip');
  }
 }

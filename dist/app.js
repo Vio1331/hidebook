@@ -5,7 +5,7 @@ import {loadPhotoMaterials,leatherSpecs} from './photo-materials.js?v=20261002h'
 import {seamCurves,linenGeometry,edgePaintGeometry,LINEN_PLIES} from './leather-details.js?v=20261002n';
 import {createStudioLighting,createStudioEnvironment} from './studio-lighting.js?v=20261002i';
 import {createCustomizationSheet} from './customization-sheet.js?v=20261005d';
-import * as pop from './pop-geometry.js?v=20261005f';
+import * as pop from './pop-geometry.js?v=20261005g';
 import {popColors,popPalettes,popAccessoryPalette} from './pop-colors.js?v=20261005d';
 import {popPresets,matchesPreset,presetThumbnail} from './pop-presets.js?v=20261005f';
 const $=s=>document.querySelector(s);
