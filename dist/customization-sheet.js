@@ -8,12 +8,13 @@ function drawModel(ctx,image,x,y,w,h){
  if(right<=left||bottom<=top)throw new Error('预览图为空');
  const sw=right-left+1,sh=bottom-top+1,scale=Math.min(w/sw,h/sh);ctx.drawImage(image,left,top,sw,sh,x+(w-sw*scale)/2,y+(h-sh*scale)/2,sw*scale,sh*scale);
 }
-export async function createCustomizationSheet({front,back,rows}){
+export async function createCustomizationSheet({front,back,rows,productName}){
  const text=rows.map(r=>r.label+r.value+(r.amount||'')).join('')+RENDER_NOTE+'定制单正面背面';
  const [frontImage,backImage]=await Promise.all([imageFrom(front),imageFrom(back),document.fonts.load('600 56px Manrope','hidebook'),document.fonts.load('400 32px "Hidebook Order Sans"',text)]);
  const canvas=document.createElement('canvas');canvas.width=960;canvas.height=1440;const ctx=canvas.getContext('2d');
  ctx.fillStyle=PAPER;ctx.fillRect(0,0,960,1440);ctx.fillStyle=INK;ctx.font='600 56px Manrope, sans-serif';ctx.fillText('hidebook',70,108);
  ctx.font='400 32px "Hidebook Order Sans", sans-serif';ctx.textAlign='right';ctx.fillText('定制单',890,105);ctx.textAlign='left';
+ ctx.fillStyle=MUTED;ctx.font='400 20px Manrope, sans-serif';ctx.fillText(productName,70,139);
  const rule=y=>{ctx.strokeStyle=LINE;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(70,y);ctx.lineTo(890,y);ctx.stroke()};rule(153);
  ctx.fillStyle=MUTED;ctx.font='400 18px "Hidebook Order Sans", sans-serif';ctx.fillText(RENDER_NOTE,70,185);
  drawModel(ctx,frontImage,62,212,400,280);drawModel(ctx,backImage,498,212,400,280);

@@ -24,7 +24,7 @@ def build(source):
     font.save(out / 'Manrope-Variable.woff')
     font = instantiateVariableFont(TTFont(source / 'NotoSansSC.ttf'), {'wght': 400}, inplace=True)
     text = ''.join((ROOT / path).read_text() for path in [
-        'dist/app.js', 'dist/index.html', 'dist/photo-materials.js', 'dist/customization-sheet.js'
+        'dist/app.js', 'dist/pop-colors.js', 'dist/index.html', 'dist/photo-materials.js', 'dist/customization-sheet.js'
     ]) + ''.join(chr(i) for i in range(32, 127))
     options = subset.Options()
     options.notdef_glyph = options.notdef_outline = True
