@@ -22,6 +22,11 @@ export const popColors=[
  {id:'cement',name:'水泥灰',hex:'#b9b2a8'},
  {id:'glacier',name:'冰川蓝',hex:'#acb3b5'},
  {id:'slate',name:'石板灰',hex:'#4b4a4e'},
- {id:'rouge-h',name:'爱马仕红',hex:'#602626'}
+ {id:'rouge-h',name:'爱马仕红',hex:'#602626'},
+ {id:'craie',name:'粉笔白',hex:'#dacdbb'}
 ];
-export const popPalettes={epsom:popColors.slice(0,17),evercolor:['gold','biscuit','new-jean','zanzibar','cement','etoupe','glacier','slate','rouge-h'].map(id=>popColors.find(c=>c.id===id))};
+const colors=ids=>ids.map(id=>popColors.find(c=>c.id===id));
+export const popPalettes={
+ epsom:colors(['casaque','orange','naples','comic','yucca','duck','celeste','nymphe','deep','mauve','azalee','craie']),
+ evercolor:colors(['rouge-h','new-jean','zanzibar','biscuit','gold','glacier','cement','slate','etoupe'])
+};

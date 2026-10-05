@@ -6,7 +6,7 @@ export const POP={width:107,height:80,radius:10,thickness:1,plyThickness:.5,inse
 export const bounds={
  rear:{half:53.5,bottom:-40,top:40,rt:10,rb:10,z:-1.5},
  accent:{half:42.5,bottom:-30.5,top:24.5,rt:3,rb:3,z:-.5},
- front:{half:53.5,bottom:-40,top:8.5,rt:0,rb:10,z:.5}
+ front:{half:53.5,bottom:-40,top:8.5,rt:0,rb:10,z:-.5}
 };
 const uvOffset={rear:[.025,.015],accent:[.04,-.06],front:[-.04,.06]};
 export function popRing(part,inset=0){
@@ -23,11 +23,14 @@ export function popDistance(part,x,y){
 }
 function gap(part,x,y){
  if(part==='rear')return 0;
- const b=bounds[part],side=Math.max(0,1-(Math.abs(x/MM)/(b.half-4))**6),rise=THREE.MathUtils.clamp((y/MM-b.bottom-4)/(b.top-b.bottom-4),0,1);
+ const b=bounds[part],side=THREE.MathUtils.smoothstep(popDistance(part,x,Math.min(y,(b.top-10)*MM))/MM,4,10),rise=THREE.MathUtils.clamp((y/MM-b.bottom-4)/(b.top-b.bottom-4),0,1);
  return .45*MM*side*rise**3;
 }
 export function popSurfaceZ(part,x,y,back=false,pressed=false){
- const opening=part==='front'?gap('accent',x,y)+gap('front',x,y):gap(part,x,y);
+ // The lower pocket is glued to the base along its two sides and bottom. It
+ // rises only inward of that seam, over the 1 mm middle pocket where present.
+ const overMiddle=THREE.MathUtils.smoothstep(popDistance('accent',x,y)/MM,-5.5,-1),
+ opening=part==='front'?overMiddle*(1.05*MM+gap('accent',x,y))+gap('front',x,y):gap(part,x,y);
  const groove=pressed?.10*MM*Math.exp(-(((popDistance(part,x,y)-2*MM)/(.115*MM))**2)):0;
  return (bounds[part].z+(back?0:1))*MM+opening+(back?groove:-groove);
 }
@@ -52,15 +55,27 @@ export function popSurface(part,back=false){
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();g.userData={part,back};return g;
 }
 export function popEdge(part){
- const pts=popRing(part),positions=[],indices=[],cross=8;
- for(let i=0;i<=pts.length;i++){
-  const p=pts[i%pts.length],prev=pts[(i+pts.length-1)%pts.length],next=pts[(i+1)%pts.length],t=next.clone().sub(prev).normalize(),n=new THREE.Vector2(t.y,-t.x);
+ // One outer shell seals the base + lower pocket together. The lower pocket's
+ // only separate exposed edge is its mouth; the middle pocket has its own coat.
+ let pts=popRing(part),closed=true;
+ if(part==='rear'){
+  const mouth=bounds.front.top*MM;
+  for(let i=pts.length-1;i>=0;i--){const a=pts[i],b=pts[(i+1)%pts.length];if((a.y-mouth)*(b.y-mouth)<0){const lower=new THREE.Vector2(a.x+(b.x-a.x)*(mouth-a.y)/(b.y-a.y),mouth),upper=lower.clone();upper.upper=true;pts.splice(i+1,0,...(a.y<mouth?[lower,upper]:[upper,lower]))}}
+ }else if(part==='front'){
+  closed=false;pts=Array.from({length:135},(_,i)=>new THREE.Vector2((-53.5+107*i/134)*MM,bounds.front.top*MM));
+ }
+ const positions=[],indices=[],cross=8,rows=closed?pts.length+1:pts.length;
+ for(let i=0;i<rows;i++){
+  const p=pts[i%pts.length],prev=pts[closed?(i+pts.length-1)%pts.length:Math.max(0,i-1)],next=pts[closed?(i+1)%pts.length:Math.min(pts.length-1,i+1)],t=next.clone().sub(prev).normalize(),n=closed?new THREE.Vector2(t.y,-t.x):new THREE.Vector2(0,1);
+  const belowMouth=part==='rear'&&!p.upper&&p.y<=bounds.front.top*MM;
+  // Duplicate the mouth row above it to keep a sharp change from 2 mm to 1 mm.
+  const top=popSurfaceZ(belowMouth?'front':part,p.x,p.y);
   for(let j=0;j<=cross;j++){
-   const u=j/cross,bulge=.045*MM*Math.sin(Math.PI*u),q=p.clone().addScaledVector(n,bulge),z=THREE.MathUtils.lerp(popSurfaceZ(part,p.x,p.y,true)-.015*MM,popSurfaceZ(part,p.x,p.y)+.015*MM,u);positions.push(q.x,q.y,z);
-   if(i<pts.length&&j<cross){const k=i*(cross+1)+j;indices.push(k,k+1,k+cross+1,k+1,k+cross+2,k+cross+1)}
+   const u=j/cross,bulge=.045*MM*Math.sin(Math.PI*u),q=p.clone().addScaledVector(n,bulge),z=THREE.MathUtils.lerp(popSurfaceZ(part,p.x,p.y,true)-.015*MM,top+.015*MM,u);positions.push(q.x,q.y,z);
+   if(i<rows-1&&j<cross){const k=i*(cross+1)+j;indices.push(k,k+1,k+cross+1,k+1,k+cross+2,k+cross+1)}
   }
  }
- const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();g.userData={part,fullPerimeter:true};return g;
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();g.userData={part,fullPerimeter:closed,sharedOuter:part==='rear',mouthOnly:part==='front',customization:part==='accent'?'innerEdge':'outerEdge'};return g;
 }
 function topFrontZ(x,y){return popSurfaceZ(y<=bounds.front.top*MM?'front':'rear',x,y)+.045*MM}
 export function popStitches(){

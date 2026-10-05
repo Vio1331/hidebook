@@ -4,19 +4,21 @@ import {MM,LAYER,HALF,BOTTOM,BODY_TOP,PART_TOP,PART_Z,ATLAS_MM,CREASE_INSET,STIT
 import {loadPhotoMaterials,leatherSpecs} from './photo-materials.js?v=20261002h';
 import {seamCurves,linenGeometry,edgePaintGeometry,LINEN_PLIES} from './leather-details.js?v=20261002n';
 import {createStudioLighting,createStudioEnvironment} from './studio-lighting.js?v=20261002i';
-import {createCustomizationSheet} from './customization-sheet.js?v=20261005a';
-import * as pop from './pop-geometry.js?v=20261005a';
-import {popColors,popPalettes} from './pop-colors.js?v=20261005a';
+import {createCustomizationSheet} from './customization-sheet.js?v=20261005b';
+import * as pop from './pop-geometry.js?v=20261005b';
+import {popColors,popPalettes} from './pop-colors.js?v=20261005b';
 const $=s=>document.querySelector(s);
 const palette=[{id:'black',name:'黑色',hex:'#363634'},{id:'craie',name:'粉笔白',hex:'#dacdbb'},{id:'gold',name:'金色',hex:'#8c5732'},{id:'caramel',name:'焦糖色',hex:'#ae7238'},{id:'etoupe',name:'大象灰',hex:'#736154'}];
 const foilColors=[{id:'gold',name:'金色',hex:'#e3bd60'},{id:'silver',name:'银色',hex:'#c7ccd1'},{id:'heat',name:'热压',hex:null}];
 const DEFAULT_VIEW_DISTANCE=9;
 const MIN_VIEW_DISTANCE=5.8;
-const threads=palette;
+const threadKeys=['thread','outerThread','innerThread'],edgeKeys=['edge','outerEdge','innerEdge'];
 const classicParts=[{id:'rear',name:'底皮'},{id:'body',name:'钞位'},{id:'accent',name:'卡位'},{id:'front',name:'下卡位'}];
 const classicSteps=[...classicParts,{id:'thread',name:'缝线'},{id:'edge',name:'边油'},{id:'crease',name:'边缘装饰线'},{id:'monogram',name:'烫金文字'}];
 const initial={rearMaterial:'epsom',bodyMaterial:'epsom',accentMaterial:'epsom',frontMaterial:'epsom',rear:'black',body:'black',accent:'black',front:'black',edge:'black',thread:'craie',crease:'single',monogram:'',foil:'gold'};
-const products={classic:{name:'Cardholder Classic',parts:classicParts,steps:classicSteps,initial},pop:{name:'Cardholder Pop',parts:classicParts.filter(p=>p.id!=='body'),steps:classicSteps.filter(p=>!['body','monogram'].includes(p.id)),initial:{rearMaterial:'epsom',accentMaterial:'epsom',frontMaterial:'epsom',rear:'duck',accent:'naples',front:'casaque',edge:'naples',thread:'craie',crease:'single',monogram:'',foil:'gold'}}};
+const popParts=classicParts.filter(p=>p.id!=='body');
+const popDetails=[{id:'outerThread',name:'外侧缝线'},{id:'innerThread',name:'内侧缝线'},{id:'outerEdge',name:'外侧边油'},{id:'innerEdge',name:'内侧边油'}];
+const products={classic:{name:'Cardholder Classic',parts:classicParts,steps:classicSteps,initial},pop:{name:'Cardholder Pop',parts:popParts,steps:[...popParts,...popDetails,{id:'crease',name:'边缘装饰线'}],initial:{rearMaterial:'epsom',accentMaterial:'epsom',frontMaterial:'epsom',rear:'duck',accent:'naples',front:'casaque',outerEdge:'naples',innerEdge:'naples',outerThread:'craie',innerThread:'craie',crease:'single',monogram:'',foil:'gold'}}};
 let product='classic',parts=products.classic.parts,steps=products.classic.steps;
 const savedConfigurations={classic:{...initial},pop:{...products.pop.initial}};
 const isPop=()=>product==='pop';
@@ -45,7 +47,7 @@ function renderOptions(){
  $('#prev-part').disabled=activeStep===0;$('#next-part').disabled=activeStep===steps.length-1;
  document.querySelectorAll('[data-step]').forEach(b=>b.setAttribute('aria-current',String(+b.dataset.step===activeStep)));
  if(part){$('#options').innerHTML=`<div class="leather-options" role="group" aria-label="${name}皮料">${leatherSpecs.filter(l=>!isPop()||['epsom','evercolor'].includes(l.id)).map(l=>`<div class="leather-option"><button class="leather-button" data-material="${l.id}" aria-pressed="${state[id+'Material']===l.id}">${l.name}</button>${materialCard(l)}<button class="material-info-button" data-info="${l.id}" aria-label="查看 ${l.name} 皮料信息">详情</button></div>`).join('')}</div>${swatches(id,leatherPalette(id))}` }
- else if(id==='thread'||id==='edge')$('#options').innerHTML=`<div class="leather-options"><button class="leather-button fixed-option" aria-pressed="true" aria-label="${id==='thread'?'高品质亚麻手缝线':'意大利 FENICE 边油'}">${id==='thread'?'高品质亚麻手缝线':'意大利 FENICE 边油'}</button></div>${swatches(id,accessoryPalette())}`;
+ else if(threadKeys.includes(id)||edgeKeys.includes(id))$('#options').innerHTML=`<div class="leather-options"><button class="leather-button fixed-option" aria-pressed="true" aria-label="${threadKeys.includes(id)?'高品质亚麻手缝线':'意大利 FENICE 边油'}">${threadKeys.includes(id)?'高品质亚麻手缝线':'意大利 FENICE 边油'}</button></div>${swatches(id,accessoryPalette())}`;
  else if(id==='crease')$('#options').innerHTML=`<div class="detail-options" role="group" aria-label="边缘装饰线"><button class="leather-button choice" data-crease="single" aria-pressed="${state.crease==='single'}">有</button><button class="leather-button choice" data-crease="none" aria-pressed="${state.crease==='none'}">无</button></div>`;
  else $('#options').innerHTML=`<div class="input-wrap"><input id="monogram" aria-label="烫金文字，最多7个英文或数字" maxlength="7" pattern="[A-Za-z0-9]*" autocomplete="off" spellcheck="false" value="${state.monogram}" placeholder="支持输入英文 / 数字"></div>${swatches('foil',foilColors.map(c=>({...c,hex:c.hex||color(state.front).hex})))}`;
  document.querySelectorAll('[data-material]').forEach(b=>b.onclick=()=>{state[id+'Material']=b.dataset.material;if(!leatherPalette(id).some(c=>c.id===state[id]))state[id]=leatherPalette(id)[0].id;applyMaterials(id);renderOptions()});
@@ -61,10 +63,10 @@ for(const d of document.querySelectorAll('dialog')){d.querySelector('.close-dial
 function toast(message){$('#toast').textContent=message;$('#toast').hidden=false;setTimeout(()=>$('#toast').hidden=true,2300)}
 $('#reset-all').onclick=()=>{state={...products[product].initial};savedConfigurations[product]={...state};applyMaterials();for(const m of Object.values(meshes))m.children.filter(x=>x.userData.surface).forEach(x=>pressSurface(x.geometry,true));selectStep(0);resetView()};
 function orderRows(config=state){
- const hasText=!isPop()&&!!config.monogram,baseCents=24900,stampCents=hasText?5000:0,money=cents=>'¥'+(cents/100).toFixed(2);
+ const hasText=!isPop()&&!!config.monogram,baseCents=isPop()?20900:24900,stampCents=hasText?5000:0,money=cents=>'¥'+(cents/100).toFixed(2);
  const rows=[{label:'基础价格',value:'',amount:money(baseCents)}];
  rows.push(...parts.map(p=>({label:p.name,value:`${color(config[p.id]).name} · ${spec(config[p.id+'Material']).name}`,hex:color(config[p.id]).hex})));
- rows.push({label:'缝线',value:color(config.thread).name,hex:color(config.thread).hex},{label:'边油',value:color(config.edge).name,hex:color(config.edge).hex},{label:'边缘装饰线',value:config.crease==='none'?'无':'有',hex:null});if(!isPop())rows.push({label:'烫金文字',value:hasText?`${color(config.foil,foilColors).name} · ${config.monogram}`:'无',hex:hasText?(config.foil==='heat'?'#'+new THREE.Color(color(config.front).hex).multiplyScalar(.5).getHexString():color(config.foil,foilColors).hex):null,amount:hasText?'+'+money(stampCents):null});rows.push({label:'总价',value:'',amount:money(baseCents+stampCents),total:true});return rows;
+ rows.push(...(isPop()?popDetails:[{id:'thread',name:'缝线'},{id:'edge',name:'边油'}]).map(p=>({label:p.name,value:color(config[p.id]).name,hex:color(config[p.id]).hex})),{label:'边缘装饰线',value:config.crease==='none'?'无':'有',hex:null});if(!isPop())rows.push({label:'烫金文字',value:hasText?`${color(config.foil,foilColors).name} · ${config.monogram}`:'无',hex:hasText?(config.foil==='heat'?'#'+new THREE.Color(color(config.front).hex).multiplyScalar(.5).getHexString():color(config.foil,foilColors).hex):null,amount:hasText?'+'+money(stampCents):null});rows.push({label:'总价',value:'',amount:money(baseCents+stampCents),total:true});return rows;
 }
 function captureOrderViews(){
  clearPartHighlight();const size=renderer.getSize(new THREE.Vector2()),pixelRatio=renderer.getPixelRatio(),view=new THREE.PerspectiveCamera(32,4/3,.08,50),images=[];
@@ -109,7 +111,8 @@ function switchProduct(id){
 }
 document.querySelectorAll('[data-product]').forEach(b=>b.onclick=()=>switchProduct(b.dataset.product));
 const edgeMaterial=new THREE.MeshPhysicalMaterial({roughness:.42,clearcoat:.16,clearcoatRoughness:.36,side:THREE.DoubleSide});
-function sealEdges(){if(isPop()){for(const p of parts){const m=new THREE.Mesh(pop.popEdge(p.id),edgeMaterial);m.name=p.id+'-full-perimeter-edge-coat';root.add(m)}}else{const m=new THREE.Mesh(edgePaintGeometry(),edgeMaterial);m.name='single-continuous-edge-coat';root.add(m)}}
+const innerEdgeMaterial=edgeMaterial.clone();
+function sealEdges(){if(isPop()){for(const p of parts){const m=new THREE.Mesh(pop.popEdge(p.id),p.id==='accent'?innerEdgeMaterial:edgeMaterial);m.name=p.id+'-edge-coat';m.userData.customization=p.id==='accent'?'innerEdge':'outerEdge';root.add(m)}}else{const m=new THREE.Mesh(edgePaintGeometry(),edgeMaterial);m.name='single-continuous-edge-coat';root.add(m)}}
 const threadMaterial=new THREE.MeshStandardMaterial({roughness:.84});
 const fiberData=new Uint8Array(256*128*4),fiberColor=new Uint8Array(256*128*4);
 for(let y=0;y<128;y++)for(let x=0;x<256;x++){
@@ -120,11 +123,15 @@ for(let y=0;y<128;y++)for(let x=0;x<256;x++){
 }
 const fiberMap=new THREE.DataTexture(fiberData,256,128);fiberMap.wrapS=fiberMap.wrapT=THREE.RepeatWrapping;fiberMap.magFilter=THREE.LinearFilter;fiberMap.minFilter=THREE.LinearMipmapLinearFilter;fiberMap.generateMipmaps=true;fiberMap.needsUpdate=true;threadMaterial.normalMap=fiberMap;threadMaterial.normalScale.set(.8,.8);
 const fiberAlbedo=new THREE.DataTexture(fiberColor,256,128);fiberAlbedo.wrapS=fiberAlbedo.wrapT=THREE.RepeatWrapping;fiberAlbedo.magFilter=THREE.LinearFilter;fiberAlbedo.minFilter=THREE.LinearMipmapLinearFilter;fiberAlbedo.generateMipmaps=true;fiberAlbedo.needsUpdate=true;threadMaterial.map=fiberAlbedo;
+const innerThreadMaterial=threadMaterial.clone();
 const holeMaterial=new THREE.MeshStandardMaterial({color:'#241d17',roughness:1});
 function makeStitches(){
- const {curves,holes,count,pitchMM}=isPop()?pop.popStitches():seamCurves(),positions=[],normals=[],uvs=[],indices=[];let offset=0;
- for(const c of curves){const g=linenGeometry(c.points);for(const v of g.attributes.position.array)positions.push(v);for(const v of g.attributes.normal.array)normals.push(v);for(const v of g.attributes.uv.array)uvs.push(v);for(const i of g.index.array)indices.push(i+offset);offset+=g.attributes.position.count;g.dispose()}
- const merged=new THREE.BufferGeometry();merged.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));merged.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));merged.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));merged.setIndex(indices);const m=new THREE.Mesh(merged,threadMaterial);m.name='continuous-saddle-seam-and-mouth-wraps';root.add(m);
+ const {curves,holes,count,pitchMM}=isPop()?pop.popStitches():seamCurves();
+ for(const {key,material,seams} of isPop()?[{key:'outerThread',material:threadMaterial,seams:curves.filter(c=>c.part==='rear')},{key:'innerThread',material:innerThreadMaterial,seams:curves.filter(c=>c.part==='accent')}]:[{key:'thread',material:threadMaterial,seams:curves}]){
+ const positions=[],normals=[],uvs=[],indices=[];let offset=0;
+ for(const c of seams){const g=linenGeometry(c.points);for(const v of g.attributes.position.array)positions.push(v);for(const v of g.attributes.normal.array)normals.push(v);for(const v of g.attributes.uv.array)uvs.push(v);for(const i of g.index.array)indices.push(i+offset);offset+=g.attributes.position.count;g.dispose()}
+ const merged=new THREE.BufferGeometry();merged.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));merged.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));merged.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));merged.setIndex(indices);const m=new THREE.Mesh(merged,material);m.name=key+'-saddle-seam';m.userData.customization=key;root.add(m);
+ }
  for(const back of [false,true]){
   const g=new THREE.SphereGeometry(.13*MM,6,4),mesh=new THREE.InstancedMesh(g,holeMaterial,holes.length),dummy=new THREE.Object3D();
   holes.forEach((hole,i)=>{const p=isPop()?hole.point:hole;const part=isPop()?hole.part:'rear',z=isPop()?pop.popSurfaceZ(part==='rear'&&!back&&p.y<=pop.bounds.front.top*MM?'front':part,p.x,p.y,back):back?surfaceZ('rear',p.x,p.y,true,false):seamSurfaceZ(p.x,p.y);dummy.position.set(p.x,p.y,z+(back?-.012:.012)*MM);dummy.scale.set(1,.7,.25);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix)});root.add(mesh);
@@ -185,7 +192,7 @@ function updateLetters(){
 function applyMaterials(part=null){
  if(!ready)return;needsRender=true;
  for(const p of parts){if(part&&part!==p.id)continue;const l=spec(state[p.id+'Material']),m=leatherMaterials[p.id];m.color.set(color(state[p.id]).hex);Object.assign(m,materialMaps[l.id]);m.normalScale.set(...({epsom:[1.28,1.28],togo:[1.15,1.15],evercolor:[1.40,1.40],swift:[1.60,1.60],mysore:[1.25,1.25]}[l.id]||[1,1]));m.roughness=l.roughness;m.specularIntensity=l.id==='epsom'?.42:l.id==='swift'?.40:l.id==='mysore'?1:l.id==='evercolor'?.95:l.id==='togo'?.50:.55;m.envMapIntensity=l.id==='epsom'?.62:l.id==='swift'?.60:l.id==='mysore'?1.05:l.id==='evercolor'?1.10:l.id==='togo'?.66:.72;m.clearcoat=l.id==='swift'?.015:0;m.clearcoatRoughness=.5;m.needsUpdate=true}
- edgeMaterial.color.set(color(state.edge).hex);threadMaterial.color.set(color(state.thread).hex).multiplyScalar(.85);updateLetters();
+ edgeMaterial.color.set(color(state[isPop()?'outerEdge':'edge']).hex);threadMaterial.color.set(color(state[isPop()?'outerThread':'thread']).hex).multiplyScalar(.85);if(isPop()){innerEdgeMaterial.color.set(color(state.innerEdge).hex);innerThreadMaterial.color.set(color(state.innerThread).hex).multiplyScalar(.85);}updateLetters();
 }
 // Presets follow an arc at the current radius, never the chord through the model.
 function moveCamera(pos,target=[0,0,0]){
@@ -204,12 +211,13 @@ function highlightPart(id){
   for(const p of parts){const pts=(isPop()?pop.popRing(p.id,2):ringPoints(PART_TOP[p.id],CREASE_INSET)).map(q=>new THREE.Vector3(q.x,q.y,(isPop()?pop.popSurfaceZ(p.id,q.x,q.y,false,state.crease==='single'):surfaceZ(p.id,q.x,q.y,false,state.crease==='single'))+.012*MM));
    overlay.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:'#ffffff',transparent:true,opacity:0,depthWrite:false,toneMapped:false})))}root.add(overlay);
  }else{
-  const material=leatherMaterials[id]||(id==='thread'?threadMaterial:id==='edge'?edgeMaterial:id==='monogram'&&state.monogram?foilMaterial:leatherMaterials.front);
+  const material=leatherMaterials[id]||(threadKeys.includes(id)?(id==='innerThread'?innerThreadMaterial:threadMaterial):edgeKeys.includes(id)?(id==='innerEdge'?innerEdgeMaterial:edgeMaterial):id==='monogram'&&state.monogram?foilMaterial:leatherMaterials.front);
   material.emissive.set('#ffffff');material.emissiveIntensity=0;materials.push(material);
  }
  partHighlight={id,start:null,settleAt:null,materials,overlay,duration:reducedMotion?350:1200};needsRender=true;
 }
 function focusPart(id){
+ id=threadKeys.includes(id)?(id==='innerThread'?'accent':'thread'):edgeKeys.includes(id)?(id==='innerEdge'?'accent':'edge'):id;
  const preset={rear:{p:[-1.3,.65,-5.7],t:[0,.05,0]},body:{p:[1.0,2.1,5.6],t:[0,.38,0]},accent:{p:[.65,1.0,5.15],t:[0,.19,.07]},front:{p:[.8,.45,5.2],t:[0,-.26,.08]},thread:{p:[-.6,.25,4.8],t:[-.16,-.10,.07]},edge:{p:[4.4,1.4,4.2],t:[0,-.1,0]},crease:{p:[.5,.6,4.5],t:[0,-.1,0]},monogram:{p:[.55,-.24,3.25],t:[.57,-.51,.07]}}[id];moveCamera(preset.p,preset.t);
 }
 function resetView(){moveCamera([1.2,.8,6.0],[0,0,0])}
@@ -245,6 +253,6 @@ function init(){
  }
  renderer.setAnimationLoop(frame);document.addEventListener('visibilitychange',()=>renderer.setAnimationLoop(document.hidden?null:frame));
  // A read-only diagnostics surface supports model QA without reaching into WebGL.
- window.hidebook={get configuration(){return {...state}},get model(){return {product,dimensionsMM:isPop()?[107,80]:[107,75],seam:root.userData.seam,renderCalls:renderer.info.render.calls,renderedFrames:renderer.info.render.frame,triangles:renderer.info.render.triangles,edgeCoats:root.children.filter(m=>m.name.includes('edge-coat')).length,layers:parts.map(p=>({name:p.name,part:p.id,foldRadiusMM:isPop()?0:.5,thicknessMM:1,vertices:meshes[p.id].children[0].geometry.attributes.position.count})),atlasMM:ATLAS_MM}},get orderRows(){return orderRows()},get camera(){return {position:camera.position.toArray(),target:controls.target.toArray()}}};
+ window.hidebook={get configuration(){return {...state}},get model(){return {product,dimensionsMM:isPop()?[107,80]:[107,75],seam:root.userData.seam,renderCalls:renderer.info.render.calls,renderedFrames:renderer.info.render.frame,triangles:renderer.info.render.triangles,customizationColors:Object.fromEntries(root.children.filter(m=>m.userData.customization).map(m=>[m.userData.customization,'#'+m.material.color.getHexString()])),edgeCoats:root.children.filter(m=>m.name.includes('edge-coat')).length,layers:parts.map(p=>({name:p.name,part:p.id,foldRadiusMM:isPop()?0:.5,thicknessMM:1,vertices:meshes[p.id].children[0].geometry.attributes.position.count})),atlasMM:ATLAS_MM}},get orderRows(){return orderRows()},get camera(){return {position:camera.position.toArray(),target:controls.target.toArray()}}};
 }
 try{[materialMaps,fontData]=await Promise.all([loadPhotoMaterials(THREE),fetch('./freeman.typeface.json').then(r=>{if(!r.ok)throw Error('Freeman 读取失败');return r.json()})]);init()}catch(e){console.error(e);$('#loading').textContent='预览加载失败，请刷新';}

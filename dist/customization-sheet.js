@@ -19,8 +19,9 @@ export async function createCustomizationSheet({front,back,rows,productName}){
  ctx.fillStyle=MUTED;ctx.font='400 18px "Hidebook Order Sans", sans-serif';ctx.fillText(RENDER_NOTE,70,185);
  drawModel(ctx,frontImage,62,212,400,280);drawModel(ctx,backImage,498,212,400,280);
  ctx.fillStyle=MUTED;ctx.font='400 26px "Hidebook Order Sans", sans-serif';ctx.textAlign='center';ctx.fillText('正面',262,546);ctx.fillText('背面',698,546);ctx.textAlign='left';
+ const rowHeight=Math.min(76,Math.floor((1404-568)/rows.length));
  rows.forEach((row,i)=>{
-  const y=568+i*76;rule(y+66);ctx.fillStyle=row.total?INK:MUTED;ctx.font='400 30px "Hidebook Order Sans", sans-serif';ctx.fillText(row.label,70,y+40);
+  const y=568+i*rowHeight;rule(y+rowHeight-10);ctx.fillStyle=row.total?INK:MUTED;ctx.font='400 30px "Hidebook Order Sans", sans-serif';ctx.fillText(row.label,70,y+40);
   if(row.hex){ctx.fillStyle=row.hex;ctx.beginPath();ctx.arc(282,y+29,13,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#00000020';ctx.stroke()}
   ctx.fillStyle=INK;ctx.font='400 32px Manrope, "Hidebook Order Sans", sans-serif';
   if(ctx.measureText(row.value).width>(row.amount?400:570))ctx.font='400 29px Manrope, "Hidebook Order Sans", sans-serif';
