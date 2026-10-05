@@ -5,8 +5,9 @@ import {loadPhotoMaterials,leatherSpecs} from './photo-materials.js?v=20261002h'
 import {seamCurves,linenGeometry,edgePaintGeometry,LINEN_PLIES} from './leather-details.js?v=20261002n';
 import {createStudioLighting,createStudioEnvironment} from './studio-lighting.js?v=20261002i';
 import {createCustomizationSheet} from './customization-sheet.js?v=20261005d';
-import * as pop from './pop-geometry.js?v=20261005d';
+import * as pop from './pop-geometry.js?v=20261005e';
 import {popColors,popPalettes,popAccessoryPalette} from './pop-colors.js?v=20261005d';
+import {popPresets,matchesPreset,presetThumbnail} from './pop-presets.js?v=20261005e';
 const $=s=>document.querySelector(s);
 const palette=[{id:'black',name:'黑色',hex:'#363634'},{id:'craie',name:'粉笔白',hex:'#dacdbb'},{id:'gold',name:'金色',hex:'#8c5732'},{id:'caramel',name:'焦糖色',hex:'#ae7238'},{id:'etoupe',name:'大象灰',hex:'#736154'}];
 const foilColors=[{id:'gold',name:'金色',hex:'#e3bd60'},{id:'silver',name:'银色',hex:'#c7ccd1'},{id:'heat',name:'热压',hex:null}];
@@ -32,6 +33,25 @@ const color=(id,list=[...palette,...popColors])=>list.find(c=>c.id===id);
 const spec=id=>leatherSpecs.find(l=>l.id===id);
 const current=()=>steps[activeStep];
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function updatePresetSelection(){
+ document.querySelectorAll('[data-preset]').forEach(b=>b.setAttribute('aria-pressed',String(isPop()&&matchesPreset(state,popPresets.find(p=>p.id===b.dataset.preset)))));
+}
+function closePresets(restoreFocus=false){
+ const open=!$('#preset-panel').hidden;$('#preset-panel').hidden=true;$('#recommended-colors').setAttribute('aria-expanded','false');
+ if(open&&restoreFocus)$('#recommended-colors').focus();
+}
+function applyPreset(preset){
+ if(!ready||!isPop())return;clearPartHighlight();cameraMotion=null;state={...state,...preset.config};savedConfigurations.pop={...state};
+ for(const m of Object.values(meshes))m.children.filter(x=>x.userData.surface).forEach(x=>pressSurface(x.geometry,state.crease==='single'));
+ orderGeneration++;if(orderImageURL){URL.revokeObjectURL(orderImageURL);orderImageURL=null}$('#download-design').disabled=true;$('#order-image').hidden=true;
+ applyMaterials();renderOptions();resetView();$('#preset-status').textContent='已应用配色 '+preset.id;
+}
+$('#preset-list').innerHTML=popPresets.map(p=>`<button class="preset-card" data-preset="${p.id}" aria-pressed="false" aria-label="配色 ${p.id}，${spec(p.material).name}，底皮${color(p.config.rear).name}，卡位${color(p.config.accent).name}，下卡位${color(p.config.front).name}">${presetThumbnail(p,color)}<span class="preset-caption"><span>配色 ${p.id}</span><span>${spec(p.material).name}</span></span><span class="preset-check" aria-hidden="true">✓</span></button>`).join('');
+document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>applyPreset(popPresets.find(p=>p.id===b.dataset.preset)));
+$('#recommended-colors').onclick=()=>{if(!ready||!isPop())return;const open=$('#preset-panel').hidden;closeMenu();$('#preset-panel').hidden=!open;$('#recommended-colors').setAttribute('aria-expanded',String(open));if(open){updatePresetSelection();$('#close-presets').focus()}};
+$('#close-presets').onclick=()=>closePresets(true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#preset-panel').hidden){closePresets(true);e.preventDefault()}});
+document.addEventListener('click',e=>{if(!e.target.closest('#preset-panel,#recommended-colors'))closePresets()});
 function materialCard(l){return `<article class="material-card"><img src="./materials/baked/${l.id}-sample.jpg?v=${['togo','evercolor','swift'].includes(l.id)?'20261002h':'20261002d'}" alt="${l.name} 皮纹"><header><h3>${l.name}</h3><span>${l.kind}</span></header><dl><dt>外观</dt><dd>${l.appearance}</dd><dt>触感</dt><dd>${l.touch}</dd><dt>手感</dt><dd>${l.feel}</dd><dt>使用</dt><dd>${l.aging}</dd></dl></article>`}
 function swatches(id,list){return `<div class="swatches" role="group" aria-label="${current().name}颜色">${list.map(c=>`<button class="swatch" data-color="${c.id}" style="--swatch:${c.hex}" aria-label="${c.name}" aria-pressed="${state[id]===c.id}"><span class="color-disc"></span><span class="color-caption">${c.name}</span></button>`).join('')}</div>`}
 function renderMenu(){$('#part-menu').innerHTML=steps.map((s,i)=>`<button data-step="${i}" aria-current="false">${s.name}</button>`).join('');document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>selectStep(+b.dataset.step))}
@@ -55,7 +75,7 @@ function renderOptions(){
  document.querySelectorAll('[data-info]').forEach(b=>b.onclick=()=>showMaterialInfo(b.dataset.info));
  document.querySelectorAll('[data-material]').forEach(b=>{let press=null,opened=false;b.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'){opened=false;press=setTimeout(()=>{opened=true;showMaterialInfo(b.dataset.material)},500)}});for(const event of ['pointerup','pointercancel','pointerleave'])b.addEventListener(event,()=>clearTimeout(press));b.addEventListener('click',e=>{if(opened){e.stopImmediatePropagation();opened=false}},true)});
  document.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{state[id==='monogram'?'foil':id]=b.dataset.color;document.querySelectorAll('[data-color]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));applyMaterials(id==='monogram'?'foil':id)});
- document.querySelectorAll('[data-crease]').forEach(b=>b.onclick=()=>{state.crease=b.dataset.crease;needsRender=true;document.querySelectorAll('[data-crease]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));for(const m of Object.values(meshes))m.children.filter(x=>x.userData.surface).forEach(x=>pressSurface(x.geometry,state.crease==='single'))});
+ document.querySelectorAll('[data-crease]').forEach(b=>b.onclick=()=>{state.crease=b.dataset.crease;needsRender=true;updatePresetSelection();document.querySelectorAll('[data-crease]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));for(const m of Object.values(meshes))m.children.filter(x=>x.userData.surface).forEach(x=>pressSurface(x.geometry,state.crease==='single'))});
  const input=$('#monogram');
  if(input){input.onfocus=()=>input.placeholder='';input.onblur=()=>input.placeholder='支持输入英文 / 数字';input.oninput=e=>{const value=e.target.value.replace(/[^a-zA-Z0-9]/g,'').slice(0,7);state.monogram=value;e.target.value=value;updateLetters()}}
 }
@@ -97,7 +117,7 @@ function makePiece(part){
 }
 function buildModel(){parts.forEach(p=>makePiece(p.id));sealEdges();makeStitches();root.add(letterGroup)}
 function switchProduct(id){
- if(id===product||!ready)return;clearPartHighlight();cameraMotion=null;closeMenu();
+ if(id===product||!ready)return;clearPartHighlight();cameraMotion=null;closeMenu();closePresets();
  savedConfigurations[product]={...state};
  const oldMaterials=new Set(Object.values(leatherMaterials));
  root.traverse(o=>{if(o.geometry)o.geometry.dispose()});root.clear();letterGroup.clear();oldMaterials.forEach(m=>m.dispose());
@@ -136,7 +156,7 @@ function makeStitches(){
   const g=new THREE.SphereGeometry(.13*MM,6,4),mesh=new THREE.InstancedMesh(g,holeMaterial,holes.length),dummy=new THREE.Object3D();
   holes.forEach((hole,i)=>{const p=isPop()?hole.point:hole;const part=isPop()?hole.part:'rear',z=isPop()?pop.popSurfaceZ(part==='rear'&&!back&&p.y<=pop.bounds.front.top*MM?'front':part,p.x,p.y,back):back?surfaceZ('rear',p.x,p.y,true,false):seamSurfaceZ(p.x,p.y);dummy.position.set(p.x,p.y,z+(back?-.012:.012)*MM);dummy.scale.set(1,.7,.25);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix)});root.add(mesh);
  }
- root.userData.seam={count,pitchMM,returnStitches:isPop()?0:4,continuousTopWraps:curves.filter(c=>c.kind==='continuous-top-return').length,foldBridges:curves.filter(c=>['fold-bridge','edge-bridge'].includes(c.kind)).length,lowerReturnsPerSide:isPop()?0:1,linenPlies:LINEN_PLIES,diameterMM:.45};
+ root.userData.seam={count,pitchMM,returnStitches:isPop()?curves.filter(c=>c.kind==='mouth-backstitch'&&!c.back).length:4,continuousTopWraps:curves.filter(c=>c.kind==='continuous-top-return').length,foldBridges:curves.filter(c=>['fold-bridge','edge-bridge'].includes(c.kind)).length,lowerReturnsPerSide:isPop()?2:1,linenPlies:LINEN_PLIES,diameterMM:.45};
 }
 function glyphShapes(text,size){
  const all=[];let offset=0;
@@ -190,7 +210,7 @@ function updateLetters(){
  const m=new THREE.Mesh(g,[foilMaterial,stampWall]);m.name='Freeman-recessed-'+state.foil;m.castShadow=m.receiveShadow=true;letterGroup.add(m);
 }
 function applyMaterials(part=null){
- if(!ready)return;needsRender=true;
+ if(!ready)return;needsRender=true;updatePresetSelection();
  for(const p of parts){if(part&&part!==p.id)continue;const l=spec(state[p.id+'Material']),m=leatherMaterials[p.id];m.color.set(color(state[p.id]).hex);Object.assign(m,materialMaps[l.id]);m.normalScale.set(...({epsom:[1.28,1.28],togo:[1.15,1.15],evercolor:[1.40,1.40],swift:[1.60,1.60],mysore:[1.25,1.25]}[l.id]||[1,1]));m.roughness=l.roughness;m.specularIntensity=l.id==='epsom'?.42:l.id==='swift'?.40:l.id==='mysore'?1:l.id==='evercolor'?.95:l.id==='togo'?.50:.55;m.envMapIntensity=l.id==='epsom'?.62:l.id==='swift'?.60:l.id==='mysore'?1.05:l.id==='evercolor'?1.10:l.id==='togo'?.66:.72;m.clearcoat=l.id==='swift'?.015:0;m.clearcoatRoughness=.5;m.needsUpdate=true}
  edgeMaterial.color.set(color(state[isPop()?'outerEdge':'edge']).hex);threadMaterial.color.set(color(state[isPop()?'outerThread':'thread']).hex).multiplyScalar(.85);if(isPop()){innerEdgeMaterial.color.set(color(state.innerEdge).hex);innerThreadMaterial.color.set(color(state.innerThread).hex).multiplyScalar(.85);}updateLetters();
 }

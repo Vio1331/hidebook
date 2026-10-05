@@ -121,6 +121,18 @@ export function popStitches(){
    // Piecewise taut bridge over the square edge: two straight spans meeting at the lip.
    if(bridge){const t=(frontTop*MM-pa.y)/(pb.y-pa.y),x=THREE.MathUtils.lerp(pa.x,pb.x,t),lip=new THREE.Vector3(x,frontTop*MM,popSurfaceZ('front',x,frontTop*MM)+.10*MM),start=new THREE.Vector3(pa.x,pa.y,za),end=new THREE.Vector3(pb.x,pb.y,zb);pts.length=0;for(let j=0;j<=20;j++){const u=j/20;const q=u<t?start.clone().lerp(lip,u/t):lip.clone().lerp(end,(u-t)/(1-t));q.z-=.12*MM*Math.exp(-((Math.min(u,1-u)/.045)**2));pts.push(q)}curves.push({points:pts,kind:'edge-bridge',part,back})}
    else curves.push({points:pts,kind:'regular',part,back});
+   // Return through the same two pairs of holes at each lower-pocket junction.
+   // The second pass lies beside the outgoing thread and tapers into the holes.
+   const low=Math.min(a.y,b.y)/MM,high=Math.max(a.y,b.y)/MM;
+   const sideRun=part==='rear'&&Math.abs(a.x-b.x)<1e-8&&Math.abs(Math.abs(a.x/MM)-half)<1e-6;
+   if(sideRun&&(Math.abs((low+high)/2-frontTop)<1e-6||Math.abs(high-(frontTop-pitch/2))<1e-6)){
+    const side=a.x<0?'left':'right',returnPoints=pts.map((p,j)=>{
+     const separation=Math.sin(Math.PI*j/20),q=p.clone();
+     q.x+=(side==='left'?-1:1)*.38*MM*separation;
+     q.z+=(back?-1:1)*.06*MM*separation;return q;
+    }).reverse();
+    curves.push({points:returnPoints,kind:'mouth-backstitch',part,back,side,stitch:high>frontTop?0:1});
+   }
   }
  }
  return {curves,holes,count:base.length,pitchMM:pitch,mouthYMM:frontTop,sideHolesMM:valid};

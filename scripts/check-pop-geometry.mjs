@@ -27,6 +27,17 @@ lowerMesh.dispose();
 const seam=popStitches(),ys=seam.sideHolesMM;const below=ys.filter(y=>y<8.5).at(-1),above=ys.find(y=>y>8.5);near((below+above)/2,8.5);near(above-below,3.38);
 for(let i=1;i<ys.length;i++)near(ys[i]-ys[i-1],3.38);
 assert.equal(seam.curves.filter(c=>c.kind==='edge-bridge').length,2);
+const returns=seam.curves.filter(c=>c.kind==='mouth-backstitch');
+assert.equal(returns.length,8,'Two backstitches per side, on both faces');
+for(const side of ['left','right'])for(const back of [false,true]){
+ const group=returns.filter(c=>c.side===side&&c.back===back);assert.deepEqual(group.map(c=>c.stitch).sort(),[0,1]);
+ for(const c of group){
+  const outgoing=seam.curves.find(o=>o.part==='rear'&&o.back===back&&o.kind!=='mouth-backstitch'&&o.points[0].distanceTo(c.points.at(-1))<1e-9&&o.points.at(-1).distanceTo(c.points[0])<1e-9);
+  assert.ok(outgoing,'Return uses existing holes');
+  const a=c.points[10],b=outgoing.points[10];near(Math.abs(a.x-b.x)/MM,.38);assert.ok(back?a.z<b.z:a.z>b.z);
+  if(!back)for(const p of c.points.slice(2,-2))if(p.y<=bounds.front.top*MM)assert.ok(p.z>=popSurfaceZ('front',p.x,p.y)-.005*MM,'Backstitch intersects pocket lip');
+ }
+}
 for(const c of seam.curves.filter(c=>c.kind==='edge-bridge'))for(const p of c.points)if(p.y<=bounds.front.top*MM&&Math.abs(p.y-bounds.front.top*MM)<1*MM)assert.ok(p.z>=popSurfaceZ('front',p.x,p.y)-.005*MM,'Thread intersects the lower lip');
 // The whole shared U-shaped boundary is bonded, not just a hidden paint bridge.
 for(const p of popRing('front'))if(p.y<bounds.front.top*MM-1e-7)near(popSurfaceZ('front',p.x,p.y,true),popSurfaceZ('rear',p.x,p.y),1e-7);
